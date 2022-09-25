@@ -41,11 +41,13 @@ This section explains how to build the artifact from scratch
 ## Proof Structure
 
 - `\Bg/coq` directory contains the definition and proofs of \B and \Bg
-- `\Bg(label)/coq` directory contains the definition and proofs of \Bg with blame labels 
+- `\Bg(label)/coq` directory contains the definition and proofs of \B with blame labels and \Bg with blame labels  
 - `\E/coq` directory contains the definition and proofs of \e
 - `\Bg/coq/syntax_ott.v` contains the locally nameless definitions of \Bg.
-- `\Bg(label)/coq/syntax_ott.v` contains the locally nameless definitions of \Br.
-- `\Bg(label)/coq/syntaxb_ott.v` contains the locally nameless definitions of \B.
+- `\Bg/coq/syntaxb_ott.v` contains the locally nameless definitions of \B.
+- `\Bg(label)/coq/syntax_ott.v` contains the locally nameless definitions of \Bg with blame labels.
+- `\Bg(label)/coq/syntaxb_ott.v` contains the locally nameless definitions of \B with blame labels.
+- `\E/coq/syntax_ott.v` contains the locally nameless definitions of \Bg.
 - `rules_inf.v` and `rulesb_inf.v` contains the `lngen` generated code.
 - `Infrastructure.v` contains the type systems of the calculi and some lemmas.
 - `Infrastructure_b.v` contains the type systems of the blame calculi and some lemmas.
@@ -55,5 +57,8 @@ This section explains how to build the artifact from scratch
 - `ttyping.v` contains the proofs of some elaboration typing lemmas.
 - `criteria.v` contains the proofs of gradual guarantee theorem.
 - `Type_Safety.v` contains the proofs of the type preservation and progress properties.
-- `soundness.v` contains the proofs of the soundness theorem with respect to blame calculus.
-- `soundness_blame.v` contains the proofs of the soundness theorem with respect to blame calculus.
+- `\Bg/coq/soundness.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
+- `\Bg/coq/soundness_blame.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
+- `\Bg(label)/coq/soundness_completeness.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with  blame   label.
+- `\Bg(label)/coq/soundness_completeness_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
+- `\Bg(label)/coq/safe_theorem.v` contains the proofs of blame theorems.
