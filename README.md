@@ -60,5 +60,5 @@ This section explains how to build the artifact from scratch
 - `\Bg/coq/soundness.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
 - `\Bg/coq/soundness_blame.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
 - `\Bg(label)/coq/soundness_completeness.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with  blame   label.
-- `\Bg(label)/coq/soundness_completeness_blame.v` contains the proofs of the soundness completeness theorems with respect to blame calculus with blame label.
+- `\Bg(label)/coq/soundness_completeness_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
 - `\Bg(label)/coq/safe_theorem.v` contains the proofs of blame theorems.
