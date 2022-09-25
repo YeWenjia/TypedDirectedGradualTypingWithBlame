@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This artifact contains the Coq formulation of \B, \Bg, \Bgl and \e calculus associated with 
+This artifact contains the Coq formulation of \B, \Bg, \Bgl and \E calculus associated with 
 the paper "Type-Directed Operational Semantics for Gradual Typing". This document 
 explains how to run the Coq formulations and Coq files briefly. 
 
@@ -30,7 +30,7 @@ This section explains how to build the artifact from scratch
 
 ### Build and Compile the Proofs
 
-1. Enter  `coq/Calculus` or `coq/Variant`  directory.
+1. Enter  `\Bg/coq`, `\Bg(label)/coq` or ``\E/coq``  directory.
 
 2. Please make sure to run the command `eval \$(opam env)` before running make if 
    you installed the Coq via opam. 
@@ -40,11 +40,12 @@ This section explains how to build the artifact from scratch
 
 ## Proof Structure
 
-- `Calculus` directory contains the definition and proofs of \B and \Bg
-- `Variant` directory contains the definition and proofs of \Br 
-- `Calculus/syntax_ott.v` contains the locally nameless definitions of \Bg.
-- `Variant/syntax_ott.v` contains the locally nameless definitions of \Br.
-- `Calculus/syntaxb_ott.v` contains the locally nameless definitions of \B.
+- `\Bg/coq` directory contains the definition and proofs of \B and \Bg
+- `\Bg(label)/coq` directory contains the definition and proofs of \Bg with blame labels 
+- `\E/coq` directory contains the definition and proofs of \e
+- `\Bg/coq/syntax_ott.v` contains the locally nameless definitions of \Bg.
+- `\Bg(label)/coq/syntax_ott.v` contains the locally nameless definitions of \Br.
+- `\Bg(label)/coq/syntaxb_ott.v` contains the locally nameless definitions of \B.
 - `rules_inf.v` and `rulesb_inf.v` contains the `lngen` generated code.
 - `Infrastructure.v` contains the type systems of the calculi and some lemmas.
 - `Infrastructure_b.v` contains the type systems of the blame calculi and some lemmas.
