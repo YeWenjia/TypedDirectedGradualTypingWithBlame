@@ -456,27 +456,29 @@ Qed.
 
 
 Lemma exists_decidable: forall e,
-  (exists e', e = e_abs e') \/ not(exists e', e = e_abs e').
+  (exists e' ll bb, e = e_abs e' ll bb) \/ not(exists e' l b, e = e_abs e' l b).
 Proof.
   introv.
   inductions e; try solve[left*; exists*];
-  try solve[right; unfold not; intros nt; inverts* nt; inverts H].
+  try solve[right; unfold not; intros nt; inverts* nt; inverts H; inverts H0;
+  inverts H].
 Qed.
 
 
 Lemma nlam_not_exist: forall e,
   nlam e ->
-  not(exists e', e = (e_abs e')).
+  not(exists e' ll bb, e = (e_abs e' ll bb)).
 Proof.
   introv nl.
   inductions nl; 
-  try solve[unfold not; intros nt; inverts* nt; inverts H].
+  try solve[unfold not; intros nt; inverts* nt; inverts H;inverts H0;
+  inverts H].
 Qed.
 
 
 Lemma nlam_exist: forall e,
   not(nlam e) ->
-  (exists e', e = (e_abs e')).
+  (exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions e; try solve[exfalso; apply nl; eauto];eauto.
@@ -506,7 +508,7 @@ Lemma not_nlam_open: forall v e x,
 Proof.
   introv nl.
   forwards*: nlam_exist nl.
-  inverts* H.
+  inverts* H. inverts H0. inverts H.
   unfold not;intros nt; inverts* nt.
 Qed.
 
@@ -555,7 +557,9 @@ Proof.
     forwards*: nlam_not_exist H5.
     forwards*: nlam_exist H5.
     forwards*: atyping_regular_1 H4.
-    inverts* H6. rewrite H8 in *.
+    inverts* H6. 
+    inverts H8. inverts H6.
+    rewrite H8 in *.
     inductions e; 
     try solve[inverts H3];
     try solve[inverts* H8].

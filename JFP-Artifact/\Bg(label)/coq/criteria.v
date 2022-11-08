@@ -16,9 +16,9 @@ Require Import Strings.String.
 
 
 
-Lemma abs_epre_true2: forall G1 G2 e1 e2,
+Lemma abs_epre_true2: forall G1 G2 e1 e2 l b,
  nlam e2 ->
- epre G1 G2 (e_abs e1) e2 ->
+ epre G1 G2 (e_abs e1 l b) e2 ->
  False.
 Proof.
   introv typ ep.
@@ -28,9 +28,9 @@ Qed.
 
 
 
-Lemma absr_epre_true2: forall G1 G2 e1 e2,
+Lemma absr_epre_true2: forall G1 G2 e1 e2 l b,
  nlam e1 ->
- epre G1 G2 e1  (e_abs e2) ->
+ epre G1 G2 e1  (e_abs e2 l b) ->
  False.
 Proof.
   introv typ ep.
@@ -59,9 +59,9 @@ Ltac solve_false := try intro; try solve [false; eauto with falseHd].
 
 
 
-Lemma abs_epre_true: forall e1 e2,
+Lemma abs_epre_true: forall e1 e2 l b,
  nlam e2 ->
- precision (e_abs e1) e2 ->
+ precision (e_abs e1 l b) e2 ->
  False.
 Proof.
   introv typ ep.
@@ -71,9 +71,9 @@ Qed.
 
 
 
-Lemma absr_epre_true: forall e1 e2,
+Lemma absr_epre_true: forall e1 e2 l b,
  nlam e1 ->
- precision e1  (e_abs e2) ->
+ precision e1  (e_abs e2 l b) ->
  False.
 Proof.
   introv typ ep.
@@ -411,9 +411,9 @@ Proof.
 Qed.
 
 
-Lemma precision_abs: forall e e1,
- precision (e_abs e) e1 ->
- exists e', e1 = (e_abs e').
+Lemma precision_abs: forall e e1 l b,
+ precision (e_abs e l b) e1 ->
+ exists e' ll bb, e1 = (e_abs e' ll bb).
 Proof.
   introv ep.
   inductions ep;eauto;
@@ -421,9 +421,9 @@ Proof.
 Qed.
 
 
-Lemma precision_absr: forall e e1,
- precision  e1 (e_abs e) ->
- exists e', e1 = (e_abs e').
+Lemma precision_absr: forall e e1 l b,
+ precision  e1 (e_abs e l b) ->
+ exists e' ll bb, e1 = (e_abs e' ll bb).
 Proof.
   introv ep.
   inductions ep;eauto;
@@ -479,7 +479,7 @@ Proof.
     exists. splits.
     pick fresh x and apply Typ_sugar.
     assert(cpre ((x, t_dyn) :: E1) ((x, t_dyn) :: E2));eauto.
-    forwards* ha: H3 x.
+    forwards* ha: H6 x.
     forwards* hb: H0 H1 t_dyn ha.
     lets(tt1&hc&hd):hb.
     inverts* hd.
@@ -1013,17 +1013,18 @@ Qed.
 
 Lemma nlam_not_exist: forall e,
   nlam e ->
-  not(exists e', e = (e_abs e')).
+  not(exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions nl; 
-  try solve[unfold not; intros nt; inverts* nt; inverts H].
+  try solve[unfold not; intros nt; inverts* nt; inverts H;
+  inverts H0;inverts H].
 Qed.
 
 
 Lemma nlam_exist: forall e,
   not(nlam e) ->
-  (exists e', e = (e_abs e')).
+  (exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions e; try solve[exfalso; apply nl; eauto];eauto.
@@ -1070,7 +1071,7 @@ Lemma remove_left_dyn: forall v1 v2 t1 t2 tt1 tt2 l b,
  principal_type v1 = (t_arrow t1 t2) ->
  principal_type v2 = (t_arrow t_dyn t_dyn) ->
  epre nil nil v1 (e_anno v2 l b t_dyn) ->
- epre nil nil v1 v2 \/ (exists e', v2 = e_abs e').
+ epre nil nil v1 v2 \/ (exists e' l b, v2 = e_abs e' l b).
 Proof.
   introv typ1 typ2 val1 val2 ty1 ty2 ep. gen tt1 tt2 t1 t2.
   inductions ep;intros; eauto.
@@ -1225,8 +1226,8 @@ Qed.
 
 Lemma not_lam_epre: forall e1 e2,
  epre nil nil e1 e2 ->
- ~ (exists e, e2 = e_abs e) ->
- ~ (exists e, e1 = e_abs e).
+ ~ (exists e l b, e2 = e_abs e l b) ->
+ ~ (exists e ll bb, e1 = e_abs e ll bb).
 Proof.
   introv ep nt.
   inductions ep; eauto; 
@@ -1239,8 +1240,8 @@ Qed.
 
 Lemma not_lam_eprer: forall e1 e2,
  epre nil nil e1 e2 ->
- ~ (exists e, e1 = e_abs e) ->
- ~ (exists e, e2 = e_abs e).
+ ~ (exists e l b, e1 = e_abs e l b) ->
+ ~ (exists e ll bb, e2 = e_abs e ll bb).
 Proof.
   introv ep nt.
   inductions ep; eauto; 
@@ -1251,11 +1252,11 @@ Proof.
 Qed.
 
 
-Lemma epre_absr_aux: forall v e l1 b1 ,
+Lemma epre_absr_aux: forall v e l1 b1 ll1 bb1,
   value v ->
   principal_type v = t_dyn ->
-  epre nil nil (e_anno (e_abs e) l1 b1 t_dyn) v ->
-  epre nil nil (e_anno (e_abs e) l1 b1 (t_arrow t_dyn t_dyn))  v.
+  epre nil nil (e_anno (e_abs e ll1 bb1) l1 b1 t_dyn) v ->
+  epre nil nil (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t_dyn t_dyn))  v.
 Proof.
   introv val ty ep. 
   inductions ep; intros;try solve[forwards*: abs_epre_true2 ep];
@@ -1275,11 +1276,11 @@ Proof.
 Qed.
 
 
-Lemma epre_absr: forall v e l1 b1 l2 b2,
+Lemma epre_absr: forall v e l1 b1 l2 b2 ll1 bb1,
   value v ->
   principal_type v = t_dyn ->
-  epre nil nil (e_anno (e_abs e) l1 b1 t_dyn) v ->
-  epre nil nil (e_anno (e_abs e) l2 b2 (t_arrow t_dyn t_dyn))  v.
+  epre nil nil (e_anno (e_abs e ll1 bb1) l1 b1 t_dyn) v ->
+  epre nil nil (e_anno (e_abs e ll1 bb1) l2 b2 (t_arrow t_dyn t_dyn))  v.
 Proof.
   introv val ty ep. 
   forwards*: epre_absr_aux ep.
@@ -1342,7 +1343,7 @@ Proof.
     eapply ep_annor; eauto.
     +
     inverts red.
-    forwards*: flike_int H11.
+    forwards*: flike_int H13.
     forwards*: abs_nlam.
     +
     inverts typ2. 
@@ -1549,11 +1550,11 @@ Proof.
 Qed.
 
 
-Lemma epre_abs_aux: forall v e t1 t2 l1 b1 ,
+Lemma epre_abs_aux: forall v e t1 t2 l1 b1 ll1 bb1,
   walue v ->
   principal_type v = (t_arrow t1 t2) ->
-  epre nil nil v (e_anno (e_abs e) l1 b1 t_dyn) ->
-  epre nil nil v (e_anno (e_abs e) l1 b1 (t_arrow t_dyn t_dyn)).
+  epre nil nil v (e_anno (e_abs e ll1 bb1) l1 b1 t_dyn) ->
+  epre nil nil v (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t_dyn t_dyn)).
 Proof.
   introv val ty ep. gen t1 t2.
   inductions ep; intros;try solve[forwards*: abs_epre_true2 ep];
@@ -1587,11 +1588,11 @@ Qed.
 
 
 
-Lemma epre_abs: forall v e t1 t2 l1 b1 l2 b2 ,
+Lemma epre_abs: forall v e t1 t2 l1 b1 l2 b2 ll1 bb1,
   walue v ->
   principal_type v = (t_arrow t1 t2) ->
-  epre nil nil v (e_anno (e_abs e) l1 b1 t_dyn) ->
-  epre nil nil v (e_anno (e_abs e) l2 b2 (t_arrow t_dyn t_dyn)).
+  epre nil nil v (e_anno (e_abs e ll1 bb1) l1 b1 t_dyn) ->
+  epre nil nil v (e_anno (e_abs e ll1 bb1) l2 b2 (t_arrow t_dyn t_dyn)).
 Proof.
   introv val ty ep.
   forwards*: epre_abs_aux ep.
@@ -2116,10 +2117,10 @@ Proof.
     inverts H2. inverts H3.
     destruct(A0).
     *
-    inverts* red; try solve[forwards*: flike_int H10];
+    inverts* red; try solve[forwards*: flike_int H12];
     try solve[forwards*: abs_nlam].
     *
-    inverts* red; try solve[forwards*: flike_int H10];
+    inverts* red; try solve[forwards*: flike_int H12];
     try solve[forwards*: abs_nlam]; try solve[simpl; inverts H11].
     ++
     forwards* lc: Typing_regular_1 typ2. inverts lc.
@@ -2160,7 +2161,7 @@ Proof.
     inverts* val2; try solve[inverts H6].
     inverts* red; simpl in *;try solve[inverts H8];
     try solve[inverts H8;exfalso; apply H1; auto];
-    try solve[inverts H11;exfalso; apply H1; auto].
+    try solve[inverts H13;exfalso; apply H1; auto].
     inverts H14.
   -
     inverts typ2. inverts H4. 
@@ -2288,7 +2289,6 @@ Proof.
     splits*.
     apply TReduce_anyd; eauto; simpl; eauto.
     eapply ep_anno; eauto.
-    
     ---
     exists(e_anno (e_anno (e_anno e2 l b (t_arrow A B3)) l2 b2 (t_arrow t_dyn t_dyn)) l2 b2 t_dyn).
     splits*.
@@ -2430,7 +2430,7 @@ Proof.
     forwards: value_group H10.
     forwards*: principle_inf H.
     rewrite H19 in *. inverts H15.
-    inverts H17; try solve[inverts H15; try solve[forwards*: abs_epre_true2 ep];
+    inverts H17; try solve[inverts H15; inverts H17;inverts H15;try solve[forwards*: abs_epre_true2 ep];
     try solve[forwards*: absr_epre_true2 ep]; 
     try solve[forwards*: flike_int] ].
     forwards*: epre_abs ll bb ll bb ep.
@@ -2463,19 +2463,23 @@ Proof.
     apply TReduce_vany; eauto.
     eapply ep_annol; eauto.
     inverts* H13.
-    inverts H23; try solve[inverts H19].
+    lets(var1&var2&var3&hh1):H23.
+    inverts hh1; try solve[inverts H19].
     --
     exists(e_anno (vv2 ) l2 b2 (t_arrow C1 D1)). splits*.
     apply TReduce_dyna; simpl; eauto.
     rewrite eq2; auto.
     apply ep_anno; eauto.
     inverts* H13; try solve[inverts H25; inverts H19].
+    lets(var1&var2&var3&hh1):H25.
+    inverts hh1.
+    inverts H19.
     --
     exists(e_anno (vv2 ) l2 b2 (t_arrow C1 D1)). splits*.
     apply TReduce_dyna; simpl; eauto.
     rewrite eq2; auto.
     apply ep_anno; eauto.
-    inverts* H13; try solve[inverts H24; try solve[forwards*: abs_nlam]].
+    inverts* H13; try solve[lets(var1&var2&var3&hh1):H24;inverts hh1; try solve[forwards*: abs_nlam]].
     ++
     lets(t3&t4&eq3): H8. subst.
     forwards*: epre_sim (t_arrow C1 D1) H5 H1.
@@ -2613,7 +2617,8 @@ Proof.
     inverts H.
     forwards*: epre_abs p0 b1  p0 b1 ep.
     forwards*: value_group H11.
-    inverts* H. inverts H12. inverts* H9.
+    inverts* H. 
+    lets(var1&var2&var3&hh1):H12. inverts hh1. inverts* H9.
     exists. splits*.
     eapply ep_annol; eauto.
     ***
@@ -2625,7 +2630,8 @@ Proof.
     forwards*: remove_left_dyn ep.
     inverts H. inverts* H18.
     exists v. splits*.
-    inverts H; inverts H17.
+    lets(var1&var2&var3&hh1):H. inverts hh1.
+    inverts H17.
     --
     inverts H13. inverts H17.
     inverts typ2. inverts H13.
@@ -2638,7 +2644,8 @@ Proof.
     exists. splits*.
     forwards*: epre_abs p0 b1 p0 b1 ep.
     forwards*: value_group H11.
-    inverts* H26. inverts* H27. 
+    inverts* H26. 
+    lets(var1&var2&var3&hh1):H27. inverts* hh1.
     exists. splits*.
     ***
     forwards*: remove_left_dyn ep.
@@ -2647,7 +2654,8 @@ Proof.
     apply TReduce_dyna; eauto.
     rewrite H5; eauto.
     eapply ep_anno; eauto.
-    inverts H26; inverts H24.
+    lets(var1&var2&var3&hh1):H26. inverts hh1.
+     inverts H24.
     --
     inverts H13. inverts H16.
     inverts typ2. inverts H13.
@@ -2660,7 +2668,8 @@ Proof.
     exists. splits*.
     forwards*: epre_abs p0 b1 p0 b1 ep.
     forwards*: value_group H11.
-    inverts* H25. inverts* H26. 
+    inverts* H25.
+    lets(var1&var2&var3&hh1):H26. inverts* hh1.
     exists. splits*.
     ***
     forwards*: remove_left_dyn ep.
@@ -2669,7 +2678,8 @@ Proof.
     rewrite H5; eauto.
     eapply ep_anno; eauto.
     inverts* H24.
-    inverts H25. inverts H23.
+    lets(var1&var2&var3&hh1):H25. inverts* hh1.
+    inverts H23.
     +
     assert(value (e_anno e1' l b t_dyn)); auto.
     assert(value e2); auto.
@@ -2693,7 +2703,8 @@ Proof.
     inverts H16.
     forwards*: epre_abs p0 b1 p0 b1 ep.
     forwards*: value_group H0.
-    inverts* H10. inverts* H13.
+    inverts* H10. 
+    lets(var1&var2&var3&hh1):H13. inverts* hh1.
     ***
     assert(TypedReduce (e_anno v p0 b1 t_dyn) l2 b2 (principal_type v) (e_exp v)).
     apply TReduce_vany; eauto.
@@ -2701,7 +2712,8 @@ Proof.
     rewrite H9 in H10; auto.
     forwards*: remove_left_dyn ep.
     inverts* H14.
-    inverts H16. inverts H17.
+    lets(var1&var2&var3&hh1):H16. inverts hh1.
+    inverts H17.
   -
     inverts red; try solve[inverts* H4]; simpl in *.
     +
@@ -2846,7 +2858,6 @@ Proof.
     exists(e_lit i0). splits*.
     apply TReduce_vany; eauto.
   -
-
      lets ep': ep.
     inverts ep; intros; try solve[forwards*: abs_epre_true2 ep];
     try solve[forwards*: absr_epre_true2 ep]; 
@@ -3072,7 +3083,8 @@ Proof.
     forwards*: epre_abs l2 b1 l2 b1 H1.
     forwards*: value_group H12.
     inverts* H10.
-    inverts H17; try solve[inverts H15].
+    lets(var1&var2&var3&hh1):H17. inverts* hh1.
+    try solve[inverts H15].
     forwards*: principle_inf H.
     rewrite H17 in *. subst.
     inverts H5. inverts H23; try solve[forwards*: abs_nlam].
@@ -3122,7 +3134,7 @@ Proof.
     try solve[inverts H];
     try solve[forwards*: abs_nlam].
     forwards*: remove_left_dyn H1.
-    inverts H;try solve[inverts H16;inverts H].
+    inverts H;try solve[lets(var1&var2&var3&hh1):H16; inverts hh1;inverts H].
     inverts H5. inverts H25. inverts H.
     inverts H27; try solve[forwards*: abs_epre_true2 ep];
     try solve[forwards*: absr_epre_true2 ep]; 
@@ -3146,7 +3158,7 @@ Proof.
     eapply ep_anno; eauto.
     --
     forwards*: remove_left_dyn H1. 
-    inverts H16; try solve[inverts H17;inverts H16].
+    inverts H16; try solve[lets(var1&var2&var3&hh1):H17; inverts* hh1;inverts H16].
     destruct(eq_type t2).
     destruct(eq_type t3). subst.
     ---
@@ -3175,7 +3187,7 @@ Proof.
       inverts H. inverts H0. inverts H22; try solve[inverts H];
       try solve[forwards*: abs_nlam].
       forwards*: remove_left_dyn H1.
-      inverts H;try solve[inverts H0;inverts H].
+      inverts H;try solve[lets(var1&var2&var3&hh1):H0; inverts hh1;inverts H].
       destruct(eq_type t2).
       destruct(eq_type t3). subst.
       ---
@@ -3193,7 +3205,7 @@ Proof.
       eapply ep_anno; eauto.
       --
       forwards*: remove_left_dyn H1. 
-      inverts H16; try solve[inverts H17;inverts H16].
+      inverts H16; try solve[lets(var1&var2&var3&hh1):H17; inverts hh1;inverts H16].
       destruct(eq_type t2).
       destruct(eq_type t3). subst.
       ---
@@ -3219,7 +3231,7 @@ Proof.
       inverts H. inverts H0. inverts H22; try solve[inverts H];
       try solve[forwards*: abs_nlam].
       forwards*: remove_left_dyn H1.
-      inverts H;try solve[inverts H0;inverts H].
+      inverts H;try solve[lets(var1&var2&var3&hh1):H0; inverts hh1;inverts H].
       destruct(eq_type t2).
       destruct(eq_type t3). subst.
       ---
@@ -3237,7 +3249,7 @@ Proof.
       eapply ep_anno; eauto.
       --
       forwards*: remove_left_dyn H1. 
-      inverts H16; try solve[inverts H17;inverts H16].
+      inverts H16; try solve[lets(var1&var2&var3&hh1):H17; inverts hh1;inverts H16].
       destruct(eq_type t2).
       destruct(eq_type t3). subst.
       ---
@@ -3704,7 +3716,8 @@ Proof.
   --
   forwards*: epre_abs ll1 bb1 ll1 bb1 epr.
   forwards*: value_group H8.
-  inverts* H13. inverts H18. inverts H11.
+  inverts* H13. 
+  lets(var1&var2&var3&hh1):H18; inverts hh1. inverts H11.
   destruct(eq_type C0).
   destruct(eq_type D0); subst.
   ++
@@ -3740,7 +3753,8 @@ Proof.
   rewrite eq2 in H20. substs.
   forwards*: epre_dyn epr.
   forwards*: value_group H21.
-  inverts* H20. inverts H22. inverts H18.
+  inverts* H20. 
+  lets(var1&var2&var3&hh1):H22; inverts hh1. inverts H18.
   destruct(eq_type C0).
   destruct(eq_type D0); subst.
   exists v21.
@@ -3817,9 +3831,9 @@ Proof.
   forwards*: tred_right l b H8 H1.
   forwards* ha: value_group H7.
   inverts* ha.
-  inverts* H10.
+  lets(var1&var2&var3&hh1):H10; inverts hh1.
   forwards*: epre_nlam H9.
-  inverts H10.
+  inverts H11.
   lets(v2'& rred& epp):H10.
   exists v2'. splits*.
   eapply stars_trans.
@@ -4439,6 +4453,7 @@ Proof.
   apply multi_rred_anno; eauto.
   eapply ep_annol; eauto.
   +
+  lets(var1&var2&var3&hh1):H7; inverts hh1.
   inverts H7; inverts* ep1.
   -
   inverts typ2. inverts H1.
@@ -4496,6 +4511,7 @@ Proof.
   apply multi_rred_anno; eauto.
   eapply ep_annol; eauto.
   +
+  lets(var1&var2&var3&hh1):H4; inverts hh1.
   inverts H4; inverts ep1.
   -
   inverts typ2. inverts H1.
@@ -4509,14 +4525,14 @@ Proof.
 Qed. 
 
 
-Lemma beta_epre: forall e v2 v3 v4 t1 t2 tt1 tt2 l1 b1,
- Typing nil (e_appv (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) v2) Chk tt1 ->
+Lemma beta_epre: forall e v2 v3 v4 t1 t2 tt1 tt2 l1 b1 ll1 bb1,
+ Typing nil (e_appv (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) v2) Chk tt1 ->
  Typing nil (e_appv v3 v4) Chk tt2 ->
- value (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) ->
+ value (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) ->
  walue v2 ->
  value v3 ->
  walue v4 ->
- epre nil nil (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) v3 ->
+ epre nil nil (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) v3 ->
  epre nil nil v2 v4 ->
  exists e2', steps (e_appv v3 v4) (e_exp e2') /\ epre nil nil (e_anno (e ^^ v2) l1 b1 t2) e2'.
 Proof.
@@ -4584,7 +4600,7 @@ Proof.
   apply Typ_anno; eauto.
   inverts H22; try solve[forwards*: abs_nlam].
   pick fresh y .
-  forwards*: H33 y.
+  forwards*: H32 y.
   rewrite (subst_exp_intro y); eauto.
   eapply typing_c_subst_simpl; eauto.
   +++
@@ -4605,12 +4621,12 @@ Proof.
   eapply ep_annor; eauto.
   apply Typ_anno; eauto.
   pick fresh y .
-  forwards*: H33 y.
+  forwards*: H32 y.
   rewrite (subst_exp_intro y); eauto.
   eapply typing_c_subst_simpl; eauto.
   ++
   forwards* h1: value_group H4.
-  inverts h1; try solve[inverts H26;inverts H29].
+  inverts h1; try solve[ lets(var1&var2&var3&hh1):H26; inverts hh1;inverts H29].
   destruct(value_decidable (e_anno v4 l (negb b) C)); auto.
   +++
   inverts H8; try solve[forwards*: abs_nlam].
@@ -4623,7 +4639,7 @@ Proof.
   eapply ep_annor; eauto.
   apply Typ_anno; eauto.
   pick fresh y .
-  forwards*: H36 y.
+  forwards*: H34 y.
   rewrite (subst_exp_intro y); eauto.
   eapply typing_c_subst_simpl; eauto.
   +++
@@ -4643,7 +4659,7 @@ Proof.
   eapply ep_annor; eauto.
   apply Typ_anno; eauto.
   pick fresh y .
-  forwards*: H36 y.
+  forwards*: H34 y.
   rewrite (subst_exp_intro y); eauto.
   eapply typing_c_subst_simpl; eauto.
   +
@@ -4653,14 +4669,14 @@ Proof.
 Qed.
 
 
-Lemma beta_eprer: forall e v2 v3 v4 t1 t2 tt1 tt2 l1 b1 ,
- Typing nil (e_appv (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) v2) Chk tt1 ->
+Lemma beta_eprer: forall e v2 v3 v4 t1 t2 tt1 tt2 l1 b1 ll1 bb1,
+ Typing nil (e_appv (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) v2) Chk tt1 ->
  Typing nil (e_appv v3 v4) Chk tt2 ->
- value (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) ->
+ value (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) ->
  walue v2 ->
  value v3 ->
  walue v4 ->
- epre nil nil v3 (e_anno (e_abs e) l1 b1 (t_arrow t1 t2)) ->
+ epre nil nil v3 (e_anno (e_abs e ll1 bb1) l1 b1 (t_arrow t1 t2)) ->
  epre nil nil v4 v2 ->
  (exists e2', steps (e_appv v3 v4) (e_exp e2') /\ epre nil nil e2' (e_anno (e ^^ v2) l1 b1 t2)) \/
  exists l b, steps (e_appv v3 v4) (e_blame l b ).
@@ -4729,7 +4745,7 @@ Proof.
     inverts* H3; try solve[inverts H].
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
-    forwards*: H37 y.
+    forwards*: H35 y.
     apply Typ_anno; eauto.
     eapply typing_c_subst_simpl; eauto.
     ---
@@ -4747,7 +4763,7 @@ Proof.
     inverts* H9; try solve[forwards*: abs_nlam].
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
-    forwards*: H37 y.
+    forwards*: H35 y.
     apply Typ_anno; eauto.
     eapply typing_c_subst_simpl; eauto.
     --
@@ -4756,6 +4772,7 @@ Proof.
     ---
     inverts H10; try solve[forwards*: abs_nlam].
     forwards* h1: value_tred_keep2 H20. inverts h1.
+    lets(var2&var3&hh1):H; inverts hh1.
     left. exists. splits.
     eapply stars_trans.
     apply stars_one.
@@ -4765,10 +4782,11 @@ Proof.
     inverts* H3; try solve[inverts H].
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
-    forwards*: H36 y.
+    forwards*: H35 y.
     apply Typ_anno; eauto.
     eapply typing_c_subst_simpl; eauto.
     ---
+    lets(var2&var3&hh1):H; inverts hh1.
     left. exists. splits.
     eapply stars_trans.
     apply stars_one.
@@ -4783,7 +4801,7 @@ Proof.
     inverts* H9; try solve[forwards*: abs_nlam].
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
-    forwards*: H36 y.
+    forwards*: H35 y.
     apply Typ_anno; eauto.
     eapply typing_c_subst_simpl; eauto.
     *
@@ -4816,12 +4834,14 @@ Proof.
     ---
     inverts H9; try solve[forwards*: abs_nlam].
     forwards* h1: value_tred_keep2 H20. inverts h1.
+    lets(var2&var3&hh1):H25; inverts hh1.
     right. exists. 
     eapply stars_transb.
     apply stars_one.
     eapply Step_abeta; eauto.
     apply multi_bblame_anno; eauto.
     ---
+    lets(var2&var3&hh1):H25; inverts hh1.
     right. exists. 
     eapply stars_transb.
     apply stars_one.
@@ -4852,6 +4872,7 @@ Proof.
     --
     inverts H20.
     inverts H.
+    lets(var2&var3&hh1):H0; inverts hh1.
     right. exists.
     eapply stars_transb.
     apply stars_one.
@@ -4862,7 +4883,7 @@ Proof.
     apply blame_step;eauto.
     apply blame_step;eauto.
     eapply Step_annov;eauto.
-    unfold not;intros nt. inverts* nt. inverts H28.
+    unfold not;intros nt. inverts* nt. inverts H30.
     ++
     inductions ep1;  try solve[inverts ep1].
     ++
@@ -5214,7 +5235,7 @@ Proof.
     forwards*: preservation_multi_step H rred1.
     forwards*: tred_right epp1.
     forwards* h2: value_group H11.
-    inverts* h2. inverts H9; try solve[forwards*: abs_nlam].
+    inverts* h2. lets(var2&var3&hh1):H9; inverts hh1; try solve[forwards*: abs_nlam].
     lets(vv2& rred2 & epp2): H9.
     forwards* h3: TypedReduce_unique H12 rred2.
     inverts h3.
@@ -5552,7 +5573,7 @@ Proof.
        eapply ep_appa;eauto.
       --
       right.
-      lets(ll1&bb1&rred1): H12.
+      lets(lll1&bbb1&rred1): H12.
       exists.
       apply multi_bblame_app2; auto.
       inverts H5.
@@ -5583,12 +5604,12 @@ Proof.
       forwards* lc: Typing_regular_1 H18.
       forwards* h6: TypedReduce_progress l1 b1 H18.
       inverts h6.
-      assert(value (e_anno (e_abs e2) l1 b1 A1)).
+      assert(value (e_anno (e_abs e2 ll1 bb1) l1 b1 A1)).
       inverts* H18; try solve[forwards*: abs_nlam].
       forwards* h7: value_tred_keep H1. inverts h7.
-      assert(value (e_anno (e_abs e2') l2 b2 B1)).
+      assert(value (e_anno (e_abs e2' ll2 bb2) l2 b2 B1)).
       inverts* H23; try solve[forwards*: abs_nlam].
-      forwards* h8: value_tred_keep H11. inverts h8.
+      forwards* h8: value_tred_keep H11. inverts* h8.
       left.
       exists. splits.
       eapply stars_trans.
@@ -5599,7 +5620,7 @@ Proof.
       eapply ep_appv; eauto.
       *
       forwards* lc: epre_lc2 ep2. inverts lc.
-      lets(ll1&bb1&rred1): H13.
+      lets(lll1&bbb1&rred1): H13.
       right. exists.
       apply multi_bblame_app2; eauto.
     +
@@ -5634,7 +5655,7 @@ Proof.
       eapply ep_appa; eauto.
       inverts* H2.
       forwards*: Typing_regular_1 H20.
-      lets(ll1&bb11&rred1): H3.
+      lets(lll1&bbb11&rred1): H3.
       right. exists.
       apply multi_bblame_app2; eauto.
 Qed.
@@ -5709,6 +5730,8 @@ Proof.
       inverts* H2; inverts H26;
       try solve[forwards*: abs_epre_true2 H20];
       try solve[forwards*: absr_epre_true2 ep].
+      lets (var2&var3&hh1): H2; inverts hh1.
+      forwards*: abs_epre_true2 H20.
       exists. splits.
       eapply stars_trans.
       apply multi_rred_app2. auto.
@@ -5755,6 +5778,7 @@ Proof.
       apply H5.
       eapply ep_app; eauto.
       forwards*: step_not_nlam H3.
+      lets (var1&var2&var3&hh1): H23; inverts hh1.
     +
       inverts typ1. inverts H0. 
       inverts typ2. inverts H0.
@@ -5786,7 +5810,7 @@ Proof.
       forwards*: value_lc H5.
       forwards*: epre_lc ep2.
       forwards*: multi_rred_app2 H17 red1.
-      forwards*: multi_rred_app (e_abs e) l2 b2 red2.
+      forwards*: multi_rred_app (e_abs e l0 b) l2 b2 red2.
       exists. splits.
       eapply stars_trans.
       apply H21. 
@@ -5831,7 +5855,7 @@ Proof.
       forwards*: value_lc H6.
       forwards*: epre_lc ep2.
       forwards*: multi_rred_app2 e2' red1.
-      forwards*: multi_rred_app (e_anno (e_abs e) p b (t_arrow t_dyn t_dyn)) red2.
+      forwards*: multi_rred_app (e_anno (e_abs e l0 b0) p b (t_arrow t_dyn t_dyn)) red2.
       exists. splits.
       eapply stars_trans.
       apply H21.
@@ -5853,10 +5877,10 @@ Proof.
       forwards*: epre_nlamr epp1.
       forwards* h5: value_group H5.
       inverts* h5.
-      inverts H24; try solve[inverts H23].
+      lets (var2&var3&hh1): H24; inverts hh1; try solve[inverts H23].
       --
       forwards*: remove_left_dyn epp1.
-      inverts H18; try solve[inverts H21;inverts H18].
+      inverts H18; try solve[lets (var1&var2&var3&hh1): H21; inverts hh1].
       inverts H7. inverts H16. 
       inverts H28. inverts H7.
       forwards*: value_lc H5.
@@ -5866,7 +5890,9 @@ Proof.
       forwards*: value_lc val2.
       forwards* hhh1: value_group H6. 
       forwards* hhh2: value_group val2. 
-      inverts hhh1. inverts hhh2. 
+      inverts hhh1; try solve[lets (var1&var2&var3&hh1): H27; inverts* hh1; try solve[inverts H]].
+      inverts hhh2;
+      try solve[lets (var1&var2&var3&hh1): H28; inverts* hh1; try solve[inverts H]].
       forwards* hh3: tdynamic_guarantee l2 b2 epp2 H8.
       lets(vv3&ttred&epp3):hh3.
       exists. splits.
@@ -5905,12 +5931,12 @@ Proof.
       apply ep_appv.
       auto. auto.
       forwards* hh4: epre_wal epp2.
-      inverts H28. inverts hh4.
-      inverts hhh2. 
+      lets (var1&var2&var3&hh1): H28; inverts* hh1. inverts hh4.
+      (* inverts hhh2. 
       forwards* hh5: epre_walr epp2.
       inverts H27. inverts hh5.
       inverts H27. inverts H28.
-      assert(value (e_anno ((e_abs x2)) l2 b2 t_dyn)); auto.
+      assert(value (e_anno ((e_abs x2 ll1 bb1)) l2 b2 t_dyn)); auto.
       forwards* hh5: TypedReduce_progress l2 b2 H11.
       inverts hh5. 
       forwards* hh6: value_tred_keep H28. inverts hh6.
@@ -5948,9 +5974,7 @@ Proof.
       eapply value_fanno.
       auto.
       apply H22.
-      inverts H.
-      
-    
+      inverts H. *)
       *
       inverts H7. inverts H16.
       forwards*: tdynamic_guarantee epp2 H23 H8.
@@ -5993,11 +6017,10 @@ Proof.
       eapply ep_appv; eauto.
       forwards* hhh4: epre_wal epp2.
       forwards*: epre_nlam epp2.
-      inverts H16. inverts H17.
-      inverts H16. inverts hhh4.
+      lets (var1&var2&var3&hh1): H16; inverts* hh1. inverts H17.
+      lets (var1&var2&var3&hh1): H16; inverts* hh1. inverts hhh4.
       forwards* hhh5: epre_walr epp1.
-      inverts H7. inverts hhh5.
-
+      lets (var1&var2&var3&hh1): H7; inverts* hh1. inverts hhh5.
       +
       inverts typ1. inverts H0. 
       inverts typ2. inverts H0.
@@ -6233,7 +6256,7 @@ Proof.
     assert((e0 ^^ vv2) = [y ~> vv2] (e0 ^^ e_var_f y)).
     rewrite (subst_exp_intro y);eauto.
     rewrite H9.
-    forwards* h6:H14.
+    forwards* h6:H17.
     forwards*: epre_open h6 epp2.
   -
      inverts* red; try solve[forwards*: abs_epre_true2 ep];
@@ -6282,10 +6305,10 @@ Proof.
       *
         inverts H21.
         inverts val1;inverts H1.
-        assert(value (e_anno (e_abs e2) l1 b1 A1)).
+        assert(value (e_anno (e_abs e2 ll1 bb1) l1 b1 A1)).
         inverts* H20; try solve[forwards*: abs_nlam].
-        assert(value (e_anno (e_abs e2') l2 b2 t_dyn)).
-        inverts* H20; try solve[forwards*: abs_nlam].
+        assert(value (e_anno (e_abs e2' ll2 bb2) l2 b2 t_dyn)).
+        inverts* H25; try solve[forwards*: abs_nlam].
         forwards* h1: TypedReduce_progress l2 b2 H25. inverts h1.
         forwards* h2: value_tred_keep H21. inverts h2.
         forwards* h4: value_tred_keep H11. inverts h4.
@@ -6297,7 +6320,7 @@ Proof.
         forwards*: epre_abs p b p b epp1.
         forwards* h1: value_group H8.
         inverts* h1;
-        try solve[ inverts H16; try solve[
+        try solve[ lets (var1&var2&var3&hh1): H16; inverts* hh1; try solve[
           forwards*: abs_epre_true2 epp1
         ]].
         forwards* h6: inference_unique H0 H24.
@@ -6345,6 +6368,7 @@ Proof.
         apply stars_one.
         eapply Step_equal;simpl;eauto.
         eapply ep_appv; eauto.
+        lets (var1&var2&var3&hh1): H2; inverts* hh1.
       *
         forwards* h1: principle_inf H1.
         rewrite h1 in *. subst.
@@ -6352,9 +6376,9 @@ Proof.
         forwards* h4: principle_inf h2.
         rewrite h4 in *. subst.
         inverts H21. inverts H2.
-        assert(value (e_anno (e_abs e2) l1 b1 A1)). 
+        assert(value (e_anno (e_abs e2 ll1 bb1) l1 b1 A1)). 
         inverts* H20; try solve[forwards*: abs_nlam].
-        assert(value (e_anno (e_abs e2') l2 b2 B1)). 
+        assert(value (e_anno (e_abs e2' ll2 bb2) l2 b2 B1)). 
         inverts* H25; try solve[forwards*: abs_nlam].
         forwards* h6: value_tred_keep H11. inverts h6.
         forwards* h8: TypedReduce_progress l2 b2 H25.
@@ -6869,7 +6893,7 @@ Proof.
     forwards* h1: Typing_chk H20. inverts h1.
     forwards* h2: Typing_chk H15. inverts h2.
     forwards* h3: IHep1 H7.
-    lets(ll1&bb1&rred1): h3. 
+    lets(lll1&bbb1&rred1): h3. 
     forwards*: Typing_regular_1 H16.
     exists.
     apply multi_bblame_app2; eauto.

@@ -463,7 +463,9 @@ Proof.
       +++
       forwards* ha: nlam_exist H0.
       forwards: Typing_regular_1 H8.
-      inverts ha; try solve[forwards*: step_not_value Red]. 
+      inverts ha; try solve[forwards*: step_not_value Red].
+      inverts H2. inverts H3. inverts* Red.
+      destruct E in *; unfold fill in *; inverts* H2.  
       --
       inverts H0.
       destruct(lambda_decidable e1).
@@ -481,7 +483,9 @@ Proof.
       ++
       forwards* ha: nlam_exist H0.
       forwards: Typing_regular_1 H10.
-      inverts ha; try solve[forwards*: step_not_value Red]. 
+      inverts ha; try solve[forwards*: step_not_value Red].
+      inverts H4. inverts H5. inverts* Red.
+      destruct E in *; unfold fill in *; inverts* H4.  
     +
       inverts Typ. 
       --
@@ -505,7 +509,9 @@ Proof.
       +++
       forwards* ha: nlam_exist H0.
       forwards: Typing_regular_1 H9.
-      inverts ha; try solve[forwards*: step_not_value Red]. 
+      inverts ha; try solve[forwards*: step_not_value Red].
+      inverts H2. inverts H3. inverts* Red.
+      destruct E in *; unfold fill in *; inverts* H2.   
       --
       inverts safe.
       *
@@ -587,12 +593,12 @@ Proof.
     inverts Typ. inverts H2.
     inverts H8.
     pick fresh y.
-    forwards*: H12.
+    forwards*: H14.
     rewrite (subst_exp_intro y); eauto.
     forwards*: safe_open H2 H7.
     inverts H4.
     pick fresh y.
-    forwards*: H12.
+    forwards*: H14.
     rewrite (subst_exp_intro y); eauto.
     forwards*: safe_open H2 H7.
   -
@@ -600,7 +606,7 @@ Proof.
    +
    forwards*: safe_TypedReduction safe.
    +
-   inverts* H3. 
+   inverts* H3. inverts H2. inverts H3. 
    inverts* safe;
    try solve[inverts* H0];
    try solve[forwards*: abs_nlam];
@@ -713,8 +719,9 @@ Proof.
     inverts* safe;try solve[
       forwards*: inference_unique H14 H17; inverts* H8].
     +
-    inverts H4. inverts* safe; try solve[inverts H10];
-    try solve[inverts H11].
+    inverts H4. inverts H3. inverts H4.
+    inverts* safe; try solve[inverts H11];
+    try solve[inverts H12].
     forwards*: principle_inf H10.
     rewrite H3 in *. inverts H1.
     forwards*: principle_inf H10.
@@ -732,14 +739,14 @@ Proof.
   -
     inverts safe. inverts* H4.
     inverts Typ. inverts H1.
-    inverts H8.
+    inverts H6.
     pick fresh x.
-    forwards*: H3 x.
+    forwards*: H9 x.
     rewrite (subst_exp_intro x); eauto.
     forwards*: safe_open H1 H7.
-    inverts H4.
+    inverts H3.
     pick fresh x.
-    forwards*: H3 x.
+    forwards*: H9 x.
     rewrite (subst_exp_intro x); eauto.
     forwards*: safe_open H1 H7.
 Qed.
@@ -798,7 +805,7 @@ Proof.
     rewrite H4 in *. inverts H15.
     --
      forwards ha: nlam_exist H0.
-     inverts* ha; try solve[inverts H].
+     inverts* ha;inverts H3;inverts H4; try solve[inverts H].
   -
     unfold not;intros nt;inverts* nt.
     +
@@ -820,14 +827,15 @@ Proof.
     --
     destruct E; unfold fill in *; inverts* H0.
     forwards ha: nlam_exist H1.
-    inverts* ha; try solve[inverts safe1].
+    inverts* ha; inverts H0; inverts H2;try solve[inverts safe1].
     forwards*: Typing_regular_1 H.
     forwards*: step_not_value H4.
     forwards ha: nlam_exist H1.
-    inverts* ha; try solve[inverts safe1].
-    inverts Typ. inverts H0.
+    inverts* ha;  inverts H0;inverts H2;try solve[inverts safe1].
+    inverts Typ. inverts H0. inverts H10.
+    (* inverts* H10. *)
     forwards*: inference_unique H H13. subst.
-    inverts H10.
+    inverts H0.
     forwards*: IHsafe2.
     assert(not(value (e_anno e2 l1 b1 A3))).
     unfold not;intros nt; inverts nt;try solve[
@@ -835,6 +843,7 @@ Proof.
     ].
     apply H0. rewrite fill_anno.
     apply blame_step; auto.
+    inverts H13.
     +
     inverts Typ. inverts H0.
     forwards*: principle_inf H.

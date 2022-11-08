@@ -67,6 +67,9 @@ Proof.
     try solve[inverts* H5];
     try solve[inverts* H].
     inverts H8; simpl;eauto.
+    inverts H0.
+    exfalso; apply H1; simpl;eauto.
+    inverts H8.
     exfalso; apply H6; simpl;eauto.
   - inverts* R2;
     try solve[inverts H3];

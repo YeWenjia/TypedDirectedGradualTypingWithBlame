@@ -16,14 +16,15 @@ Require Import Strings.String.
 
 Lemma value_group: forall v,
  value v ->
- walue v \/ (exists e', v = (e_abs e')) .
+ walue v \/ (exists e' l b, v = (e_abs e' l b)) .
 Proof.
   introv val.
   inductions val; try solve[left*];eauto.
   - left.
     inverts* IHval.
-    inverts* H0.
+    inverts* H0. inverts H1. inverts* H0.
   - inverts* IHval. inverts* H0.
+    inverts* H1. inverts* H0.
 Qed.
 
 
@@ -90,8 +91,8 @@ Proof with auto.
 Qed.
 
 
-Lemma abs_nlam: forall e,
- nlam(e_abs e) ->
+Lemma abs_nlam: forall e l b,
+ nlam(e_abs e l b) ->
  False.
 Proof.
   introv nt;inverts nt.
@@ -177,7 +178,8 @@ Proof with auto.
  forwards*: value_group H.
  inverts* H0.
  forwards*: TypedReduce_nlambda red.
- inverts* H1. inverts H0.
+ inverts* H1. inverts H2. inverts* H1.
+ inverts* H0.
 Qed.
 
 
@@ -191,11 +193,12 @@ Qed.
 
 Lemma walue_nlam2:forall v,
  walue v ->
- not(exists e', v = (e_abs e')) .
+ not(exists e' l b, v = (e_abs e' l b)) .
 Proof.
   introv val.
-  inductions val; try solve[unfold not; intros nt ; inverts nt; inverts H0];
-  try solve[unfold not; intros nt ; inverts nt; inverts H].
+  inductions val; try solve[unfold not; intros nt ; inverts nt; inverts H0;inverts H1;
+  inverts H0];
+  try solve[unfold not; intros nt ; inverts nt; inverts H;inverts H0;inverts H].
 Qed.
 
 
@@ -224,7 +227,7 @@ Proof with auto.
  forwards*: value_group H.
  inverts* H0.
  forwards*: TypedReduce_nlambda2 red.
- inverts* H1. inverts H0.
+ inverts* H1. inverts H2. inverts H1. inverts H0.
 Qed.
 
 
@@ -780,7 +783,9 @@ Proof.
     inverts Val1;inverts* Typ1;try solve[inverts H0;inverts* Typ2].
     forwards* h2: value_group H1.
     inverts* h2.
-    inverts* H5. 
+    inverts* H5. inverts H6. inverts* H5.
+    inverts* H0. inverts* H1. inverts* H0.
+    inverts* H.   
     + 
     inductions e2'.
     assert(fill ((appvCtxR e1 )) e2 = e_appv e1 e2); eauto.
@@ -838,6 +843,7 @@ Proof.
   forwards*: value_value typ'.
   forwards*: value_group H.
   inverts* H0. inverts* H1. inverts H0.
+  inverts* H1. inverts H0.
 Qed.
 
 
@@ -889,6 +895,7 @@ Proof.
   forwards*: value_value2 typ'.
   forwards*: value_group H.
   inverts* H0. inverts* H1. inverts H0.
+  inverts* H1. inverts H0.
 Qed.
 
 
@@ -957,8 +964,8 @@ Proof.
   forwards* h2: value_value typ.
   inverts typ. inverts* H.
   inverts* H9; try solve[forwards*: abs_nlam].
-  inverts* red2; simpl in *; try solve[inverts* H8];
-  try solve[inverts* H9];
+  inverts* red2; simpl in *; try solve[inverts* H9];
+  try solve[inverts* H10];
   try solve[inverts* H];
   try solve[forwards*: abs_nlam].
   -
@@ -1099,7 +1106,7 @@ Proof.
     [y ~> v4'] (e1 ^^ e_var_f y)).
     rewrite (subst_exp_intro y); eauto.
     rewrite H1.
-    forwards*: H4 y.
+    forwards*: H7 y.
     eapply atyping_c_subst_simpl; eauto.
     forwards* : TypedReduce_nlambda H0.
     +
@@ -1146,10 +1153,13 @@ Proof.
     assert((x ^^ v4') = 
     [y ~> v4'] (x ^^ e_var_f y)).
     rewrite (subst_exp_intro y); eauto.
+    inverts H3. inverts H5. inverts H3.
     rewrite H2.
     forwards*: H10 y.
     eapply atyping_c_subst_simpl; eauto.
     forwards* : TypedReduce_nlambda H1.
+    inverts H3. inverts H7. inverts H2.
+    inverts H6.
     +
     forwards* h7: atyping_typing typ2.
     forwards* h8: atyping_typing2 typ2.
@@ -1404,8 +1414,8 @@ Proof.
   forwards* h3: atyping_typing2 H10.
   assert(value t2). inverts* H0.
   forwards* h5: value_value2 H10.
-  forwards* h4: TypedReduce_progress l0 b h3.
-  inverts h4.
+  forwards* h4: TypedReduce_progress l2 b h3.
+  inverts* h4.
   forwards* h6: value_tred_keep2 H4. inverts h6.
   inverts H8. inverts h2. 
   inverts* H12; try solve[forwards*: abs_nlam];
@@ -1417,8 +1427,8 @@ Proof.
   eapply atyp_anno; eauto.
   pick fresh y.
   rewrite (subst_exp_intro y); eauto.
-  assert((e ^^ e_anno t2 l0 b A) = 
-  [y ~> e_anno t2 l0 b A] (e ^^ e_var_f y)).
+  assert((e ^^ e_anno t2 l2 b A) = 
+  [y ~> e_anno t2 l2 b A] (e ^^ e_var_f y)).
   rewrite (subst_exp_intro y); eauto.
   rewrite H5.
   forwards*: H14 y.
@@ -1510,7 +1520,7 @@ Proof.
   inverts* H0.
   forwards* h2: value_value2 H10.
   forwards* h3: atyping_typing2 H10.
-  forwards* h5: TypedReduce_progress l0 b h3.
+  forwards* h5: TypedReduce_progress l1 b0 h3.
   inverts h5.
   forwards* h6: value_tred_keep2 H4.
   inverts h6.
@@ -1520,8 +1530,8 @@ Proof.
   eapply atyp_anno; eauto.
   pick fresh y.
   rewrite (subst_exp_intro y); eauto.
-  assert((e ^^  e_anno t2 l0 b t_dyn) = 
-  [y ~>  e_anno t2 l0 b t_dyn] (e ^^ e_var_f y)).
+  assert((e ^^  e_anno t2 l1 b0 t_dyn) = 
+  [y ~>  e_anno t2 l1 b0 t_dyn] (e ^^ e_var_f y)).
   rewrite (subst_exp_intro y); eauto.
   rewrite H5.
   forwards*: H9 y.
@@ -1673,12 +1683,12 @@ Proof.
   eapply value_value2; eauto.
   forwards* h2: value_tred_keep2 H1.
   inverts h2.
-  inverts lc. inverts H9.
+  inverts lc. inverts H8.
   exists. splits.
   apply sstars_one.
   eapply Step_beta; eauto.
   forwards*: value_group H2. inverts* H6.
-  inverts H9. inverts* H6.
+  inverts H8. inverts* H6. inverts H8. inverts H6.
   eapply atyp_sim;eauto.
   eapply atyp_anno;eauto.
   pick fresh y.
@@ -1693,16 +1703,16 @@ Proof.
   destruct x.
   ++
   forwards* h5: TypedReduce_equal H1 H5.
-  inverts lc. inverts H9.
+  inverts lc. inverts H8.
   forwards* h6: atyping_typing h5.
   forwards* h7: TypedReduce_walue H5.
   exists. splits.
   eapply sstars_trans.
   rewrite fill_appvr.
   apply sstars_one.
-  apply do_step; simpl in *;auto.
-  apply Step_annov;simpl in *;eauto.
-  unfold fill.
+  apply do_step; simpl in *;eauto.
+  (* apply Step_annov;simpl in *;eauto.
+  unfold fill. *)
   apply sstars_one.
   eapply Step_beta; eauto.
   eapply atyp_sim;eauto.
@@ -2032,12 +2042,12 @@ Proof.
   eapply value_value2; eauto.
   forwards* h2: value_tred_keep2 H1.
   inverts h2.
-  inverts lc. inverts H10.
+  inverts lc. inverts H9.
   exists. splits.
   apply sstars_one.
   eapply Step_nbeta; eauto.
   forwards*: value_group H2. inverts* H6.
-  inverts H10. inverts* H6.
+  inverts H9.  inverts* H6. inverts H9. inverts H6.
   eapply atyp_sim;eauto.
   eapply atyp_anno;eauto.
   pick fresh y.
@@ -2052,7 +2062,7 @@ Proof.
   destruct x.
   ++
   forwards* h5: TypedReduce_equal H1 H5.
-  inverts lc. inverts H10.
+  inverts lc. inverts H9.
   forwards* h6: atyping_typing h5.
   forwards* h7: TypedReduce_walue H5.
   exists. splits.

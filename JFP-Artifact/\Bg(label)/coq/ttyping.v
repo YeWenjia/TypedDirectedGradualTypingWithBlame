@@ -34,7 +34,7 @@ Qed.
 Lemma lc_e_abs_exists2 :
 forall x1 e1 l b tt1,
   lc_exp (e_anno (open_exp_wrt_exp e1 (e_var_f x1)) l b tt1) ->
-  lc_exp (e_abs e1).
+  lc_exp (e_abs e1 l b).
 Proof.
 intros; exp_lc_exists_tac; eauto with lngen.
 inverts* H0.
@@ -380,27 +380,29 @@ Qed.
 
 
 Lemma exists_decidable: forall e,
-  (exists e', e = e_abs e') \/ not(exists e', e = e_abs e').
+  (exists e' l b, e = e_abs e' l b) \/ not(exists e' l b, e = e_abs e' l b).
 Proof.
   introv.
   inductions e; try solve[left*; exists*];
-  try solve[right; unfold not; intros nt; inverts* nt; inverts H].
+  try solve[right; unfold not; intros nt; inverts* nt; inverts H;
+  inverts H0; inverts H].
 Qed.
 
 
 Lemma nlam_not_exist: forall e,
   nlam e ->
-  not(exists e', e = (e_abs e')).
+  not(exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions nl; 
-  try solve[unfold not; intros nt; inverts* nt; inverts H].
+  try solve[unfold not; intros nt; inverts* nt; inverts H;
+  inverts H0; inverts H].
 Qed.
 
 
 Lemma nlam_exist: forall e,
   not(nlam e) ->
-  (exists e', e = (e_abs e')).
+  (exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions e; try solve[exfalso; apply nl; eauto];eauto.
@@ -430,7 +432,7 @@ Lemma not_nlam_open: forall v e x,
 Proof.
   introv nl.
   forwards*: nlam_exist nl.
-  inverts* H.
+  inverts* H.  inverts* H0. inverts H. 
   unfold not;intros nt; inverts* nt.
 Qed.
 
@@ -484,7 +486,7 @@ Proof.
     forwards*: nlam_not_exist H5.
     forwards*: nlam_exist H5.
     forwards*: typing_regular_1 H4.
-    inverts* H6. rewrite H8 in *.
+    inverts* H6. inverts H8. inverts H6. rewrite H8 in *.
     inductions e; 
     try solve[inverts H3];
     try solve[inverts* H8].
@@ -580,7 +582,7 @@ Qed.
 
 Lemma ttprinciple_inf: forall v A t,
   value v -> typing nil v Inf3 A t -> (principal_type v) = A .
-Proof.
+Proof.  
   introv Val Typ.
   gen A.
   induction Val; introv  Typ; try solve [inverts* Typ].
@@ -1016,7 +1018,8 @@ Proof.
     forwards*: nlam_not_exist H4.
     forwards*: nlam_exist H4.
     forwards*: ttyping_regular_1 H3.
-    inverts* H5. rewrite H7 in *.
+    inverts* H5. inverts H7. inverts H5.
+    rewrite H7 in *.
     inductions e; 
     try solve[inverts H2; eauto];
     try solve[inverts* H7].
@@ -1029,7 +1032,8 @@ Proof.
     forwards*: nlam_not_exist H5.
     forwards*: nlam_exist H5.
     forwards*: ttyping_regular_1 H4.
-    inverts* H6. rewrite H8 in *.
+    inverts* H6. inverts H8. inverts H6.
+    rewrite H8 in *.
     inductions e; 
     try solve[exfalso; apply H5; eauto];
     try solve[inverts* H8].

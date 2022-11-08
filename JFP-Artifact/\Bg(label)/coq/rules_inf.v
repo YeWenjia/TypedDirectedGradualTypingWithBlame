@@ -50,7 +50,7 @@ Fixpoint close_exp_wrt_exp_rec (n1 : nat) (x1 : var) (e1 : exp) {struct e1} : ex
     | e_var_f x2 => if (x1 == x2) then (e_var_b n1) else (e_var_f x2)
     | e_var_b n2 => if (lt_ge_dec n2 n1) then (e_var_b n2) else (e_var_b (S n2))
     | e_lit i1 => e_lit i1
-    | e_abs e2 => e_abs (close_exp_wrt_exp_rec (S n1) x1 e2)
+    | e_abs e2 l b => e_abs (close_exp_wrt_exp_rec (S n1) x1 e2) l b
     | e_app e2 p b  e3 => e_app (close_exp_wrt_exp_rec n1 x1 e2) p b (close_exp_wrt_exp_rec n1 x1 e3)
     | e_anno e2 p b A1 => e_anno (close_exp_wrt_exp_rec n1 x1 e2) p b A1
     | e_add => e_add
@@ -76,7 +76,7 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
     | e_var_f x1 => 1
     | e_var_b n1 => 1
     | e_lit i1 => 1
-    | e_abs e2  => 1 +  (size_exp e2) 
+    | e_abs e2 l b => 1 +  (size_exp e2) 
     | e_app e2 p b e3 => 1 + (size_exp e2) + (size_exp e3)
     | e_anno e2 p b A1 => 1 + (size_exp e2) + (size_typ A1)
     | e_add => 1
@@ -99,9 +99,9 @@ Inductive degree_exp_wrt_exp : nat -> exp -> Prop :=
     degree_exp_wrt_exp n1 (e_var_b n2)
   | degree_wrt_exp_e_lit : forall n1 i1,
     degree_exp_wrt_exp n1 (e_lit i1)
-  | degree_wrt_exp_e_abs : forall n1 e1,
+  | degree_wrt_exp_e_abs : forall n1 e1 l b,
     degree_exp_wrt_exp (S n1) e1 ->
-    degree_exp_wrt_exp n1 (e_abs e1)
+    degree_exp_wrt_exp n1 (e_abs e1 l b)
   | degree_wrt_exp_e_app : forall n1 e1 e2 p b ,
     degree_exp_wrt_exp n1 e1 ->
     degree_exp_wrt_exp n1 e2 ->
@@ -138,9 +138,9 @@ Inductive lc_set_exp : exp -> Set :=
     lc_set_exp (e_var_f x1)
   | lc_set_e_lit : forall i1,
     lc_set_exp (e_lit i1)
-  | lc_set_e_abs : forall e1 ,
+  | lc_set_e_abs : forall e1 l b,
     (forall x1 : var, lc_set_exp (open_exp_wrt_exp e1 (e_var_f x1))) ->
-    lc_set_exp (e_abs e1)
+    lc_set_exp (e_abs e1 l b)
   | lc_set_e_app : forall e1 e2 p b,
     lc_set_exp e1 ->
     lc_set_exp e2 ->
@@ -804,14 +804,14 @@ Ltac exp_lc_exists_tac :=
           end).
 
 Lemma lc_e_abs_exists :
-forall x1 e1,
+forall x1 e1 l b,
   lc_exp (open_exp_wrt_exp e1 (e_var_f x1)) ->
-  lc_exp (e_abs e1).
+  lc_exp (e_abs e1 l b).
 Proof.
 intros; exp_lc_exists_tac; eauto with lngen.
 Qed.
 
-Hint Extern 1 (lc_exp (e_abs _ )) =>
+Hint Extern 1 (lc_exp (e_abs _ _ _)) =>
   let x1 := fresh in
   pick_fresh x1;
   apply (lc_e_abs_exists x1) : core.
@@ -848,8 +848,8 @@ Qed.
 Hint Resolve lc_body_exp_wrt_exp : lngen.
 
 Lemma lc_body_e_abs_2 :
-forall e1 ,
-  lc_exp (e_abs e1) ->
+forall e1 l b,
+  lc_exp (e_abs e1 l b) ->
   body_exp_wrt_exp e1.
 Proof.
 default_simp.
@@ -1547,10 +1547,10 @@ Qed.
 Hint Resolve subst_exp_close_exp_wrt_exp_open_exp_wrt_exp : lngen.
 
 Lemma subst_exp_e_abs :
-forall x2 e2 e1 x1,
+forall x2 e2 e1 x1 l b,
   lc_exp e1 ->
   x2 `notin` fv_exp e1 `union` fv_exp e2 `union` singleton x1 ->
-  subst_exp e1 x1 (e_abs e2) = e_abs (close_exp_wrt_exp x2 (subst_exp e1 x1 (open_exp_wrt_exp e2 (e_var_f x2)))).
+  subst_exp e1 x1 (e_abs e2 l b) = e_abs (close_exp_wrt_exp x2 (subst_exp e1 x1 (open_exp_wrt_exp e2 (e_var_f x2)))) l b.
 Proof.
 default_simp.
 Qed.

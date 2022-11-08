@@ -141,17 +141,18 @@ Qed.
 
 Lemma nlam_not_exist: forall e,
   nlam e ->
-  not(exists e', e = (e_abs e')).
+  not(exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions nl; 
-  try solve[unfold not; intros nt; inverts* nt; inverts H].
+  try solve[unfold not; intros nt; inverts* nt; inverts H; inverts H0;
+  inverts H].
 Qed.
 
 
 Lemma nlam_exist: forall e,
   not(nlam e) ->
-  (exists e', e = (e_abs e')).
+  (exists e' l b, e = (e_abs e' l b)).
 Proof.
   introv nl.
   inductions e; try solve[exfalso; apply nl; eauto];eauto.
@@ -336,46 +337,47 @@ Qed.
 
 Lemma step_nlam: forall e e2,
   step e (e_exp e2) ->
-  not(exists e3, e2 = (e_abs e3)).
+  not(exists e3 l b , e2 = (e_abs e3 l b)).
 Proof.
   introv red.
   inductions red;try solve[
-  unfold not; intros nt; inverts* nt;inverts* H1];
+  unfold not; intros nt; inverts* nt;inverts H0; inverts H1;inverts* H0];
   try solve[
   unfold not; intros nt; inverts* nt;inverts* H0];
   try solve[
-  unfold not; intros nt; inverts* nt;inverts* H];
+  unfold not; intros nt; inverts* nt;inverts* H;inverts H0;inverts H];
   try solve[
-  unfold not; intros nt; inverts* nt;inverts* H2].
+  unfold not; intros nt; inverts* nt;inverts H1;inverts* H2;inverts H1].
   destruct E; unfold fill in *; 
-  unfold not; intros nt; inverts* nt; try solve[inverts H0].
+  unfold not; intros nt; inverts* nt; try solve[inverts H0; inverts H1; inverts H0].
   unfold not; intros nt; inverts* nt.
-  inverts* H0. inverts H7.
-  unfold not; intros nt; inverts* nt; try solve[inverts H3].
-  unfold not; intros nt; inverts* nt; try solve[inverts H3].
+  inverts H2. inverts H3. inverts H0. inverts H7.
+  unfold not; intros nt; inverts* nt; try solve[inverts H3;inverts H4;inverts H3].
+  unfold not; intros nt; inverts* nt; try solve[inverts H3;inverts H4;inverts H3].
 Qed.
 
 Lemma steps_nlam: forall e e2,
-  not(exists e1, e = (e_abs e1)) ->
+  not(exists e1 l b, e = (e_abs e1 l b)) ->
   e ->** e_exp e2 ->
-  not(exists e3, e2 = (e_abs e3)).
+  not(exists e3 l2 b2 , e2 = (e_abs e3 l2 b2)).
 Proof.
   introv ne red.
   inductions red; eauto.
-  assert(not (exists ee, e' = (e_abs ee))).
+  assert(not (exists ee ll2 bb2, e' = (e_abs ee ll2 bb2))).
   inductions H; try solve[
-  unfold not; intros nt; inverts* nt;inverts* H1];
+  unfold not; intros nt; inverts* nt;inverts* H1;inverts H2; inverts* H1];
   try solve[
-  unfold not; intros nt; inverts* nt;inverts* H0];
+  unfold not; intros nt; inverts* nt;inverts* H0;inverts H; inverts* H0];
   try solve[
-  unfold not; intros nt; inverts* nt;inverts* H];
+  unfold not; intros nt; inverts* nt;inverts* H;inverts* H0;inverts* H];
   try solve[
-  unfold not; intros nt; inverts* nt;inverts* H3].
+  unfold not; intros nt; inverts* nt;inverts* H3;inverts* H4;inverts* H3].
   destruct E; unfold fill in *; 
-  unfold not; intros nt; inverts* nt; inverts H1.
-  unfold not; intros nt; inverts* nt. inverts H0.
-  inverts H7.
-  unfold not; intros nt; inverts* nt. 
+  unfold not; intros nt; inverts* nt; inverts H1;inverts H2;inverts H1.
+  unfold not; intros nt; inverts* nt. inverts H2.
+  inverts H3. inverts* H0.
+  inverts H7. 
+  unfold not; intros nt; inverts* nt.
 Qed.
 
 

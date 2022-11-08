@@ -61,8 +61,8 @@ Proof with auto.
  introv val red.
  forwards*: Tred_value red.
  forwards*: value_group H.
- inverts* H0.
- inverts* H1. inverts* red; try solve[forwards*: abs_nlam].
+ inverts* H0. inverts H1. inverts H0. inverts H1.
+ inverts* H. inverts* red; try solve[forwards*: abs_nlam].
 Qed.
 
 
@@ -99,7 +99,7 @@ Proof.
   eauto.
 Qed.
 
-
+Parameter label : atom.
 
 (* one *)
 
@@ -113,9 +113,9 @@ Proof.
   try solve[exists label true; exists;eapply ttyp_sim; eauto;unfold not; intros nt; inverts* nt; inverts H1];
   try solve[exists label true; eapply ttyp_sim; eauto;unfold not; intros nt; inverts* nt; inverts H];
   try solve[exists label true; eapply ttyp_sim; eauto;unfold not; intros nt; inverts* nt; inverts H2].
-  exists label true. exists.
+  exists l b. exists.
   eapply ttyp_abs; eauto.
-  exists label true. exists.
+  exists l b. exists.
   pick fresh y and apply ttyp_abs2;eauto.
 Qed.
 
@@ -323,7 +323,7 @@ Proof.
     +
     forwards* h1: ttyping_regular_3 H11.
     inverts H11; try solve[forwards*: abs_nlam]. 
-    inverts H13; try solve[forwards*: abs_nlam].
+    inverts H17; try solve[forwards*: abs_nlam].
     inverts h1.  
     left.
     exists. splits.
@@ -435,9 +435,9 @@ Proof with auto.
  introv val typ red.
  forwards*: Tred_value red.
  forwards*: value_group H.
- inverts* H0.
+ inverts* H0. inverts H1. inverts H0. inverts H1.
  forwards*: tTypedReduce_nlambda2 red.
- inverts* H1. inverts H0.
+ inverts* H0. 
 Qed.
 
 Theorem typing_elaborate_completeness_gen1: forall l b B e t t' A n,
@@ -467,7 +467,8 @@ Proof.
       lets(vv1&vv2&nn1&rred2&rred1&ttyp2&sz1): H2.
       inverts lc.
       forwards*: steps_nlam rred1.
-      unfold not;intros nt. inverts nt.
+      unfold not;intros nt. 
+      lets (ee& ll & bb&hh1):nt. inverts hh1.
       forwards*: value_valueb ttyp1; 
       forwards*: bstep_not_value Red.
       inverts ttyp2;
@@ -562,7 +563,7 @@ Proof.
        forwards*: ttyping_typing H4;simpl in H12.
        forwards*: preservation_multi_step rred1.
        forwards*: steps_nlam rred1.
-       unfold not; intros nt. inverts nt.
+       unfold not; intros nt.  lets (ee& ll & bb&hh1):nt. inverts hh1.
        exfalso; apply H0; eauto.
        inverts ttyp2; 
        try solve[exfalso; apply H14;eauto].
@@ -609,7 +610,8 @@ Proof.
       lets(vv1&vv2&nn1&rred2&rred1&ttyp2&sz1): H3.
       inverts lc.
       forwards*: steps_nlam rred1.
-      unfold not;intros nt. inverts nt.
+      unfold not;intros nt.  
+      lets (ee& ll & bb&hh1):nt. inverts hh1.
       forwards*: value_valueb ttyp1; 
       forwards*: bstep_not_value Red.
       inverts ttyp2;
@@ -838,6 +840,7 @@ Proof.
       inverts lc. 
       forwards*: TypedReduce_walue3 H3.
       forwards*: nlam_exist H13. inverts H6.
+      inverts H11. inverts H6.
       unfold open_term_wrt_term; simpl.
       pick fresh y. 
        forwards*: not_nlam_open (e_anno e2 l1 b0 t_dyn) y H13.
@@ -878,15 +881,15 @@ Proof.
       rewrite H11.
       forwards*: walue_nlam H5.
       pick fresh y.
-      forwards*: nlam_open2 y H16 H12.
+      forwards*: nlam_open2 y H18 H12.
       rewrite (subst_exp_intro y); eauto.
       rewrite (subst_term_intro y); eauto.
-      forwards*: H7 y.
+      forwards*: H6 y.
       eapply ttyp_sim; eauto.
       eapply ttyp_anno; eauto.
       eapply ttyping_c_subst_simpl; eauto.
-      forwards*: nlam_open3 y H16.
-      forwards*: nlam_open2 y H12 H17.
+      forwards*: nlam_open3 y H18.
+      forwards*: nlam_open2 y H12 H16.
       omega. omega.
       ++
       forwards*: valueb_value H8.
@@ -894,10 +897,12 @@ Proof.
       forwards*: value_anno H2.
       inverts lc. inverts H11.
       forwards*: TypedReduce_walue3 H3.
-      forwards*: nlam_exist H16. inverts H11.
+      forwards*: nlam_exist H18. 
+      inverts H11.
+      inverts H12. inverts H11.
       unfold open_term_wrt_term; simpl.
       pick fresh y.
-      forwards*: not_nlam_open (e_anno e2 l1 b0 t_dyn) y H16. 
+      forwards*: not_nlam_open (e_anno e2 l1 b0 t_dyn) y H18. 
       left.
       exists. splits.
       apply bbstep_refl.
@@ -910,7 +915,7 @@ Proof.
       rewrite H12.
       rewrite (subst_exp_intro y); eauto.
       rewrite (subst_term_intro y); eauto.
-      forwards*: H7 y.
+      forwards*: H6 y.
       unfold open_term_wrt_term; simpl in *.
       forwards*: ttyping_c_subst_simpl H13 H8.
       omega. omega. 
@@ -943,7 +948,8 @@ Proof.
       forwards* h2: valueb_value H7.
       inverts lc.
       forwards*: val_nlam_wal h2 H11.
-      forwards* h1: nlam_exist H13. inverts h1.
+      forwards* h1: nlam_exist H13. 
+      lets (ee& ll & bb&hh1): h1. inverts hh1.
       unfold open_term_wrt_term; simpl.
       pick fresh y.
       forwards*: not_nlam_open e2 y H13.
@@ -976,21 +982,22 @@ Proof.
       assert((open_term_wrt_term_rec 0 v t0) = (open_term_wrt_term t0 v)); eauto.
       rewrite H3.
       pick fresh y.
-      forwards*: nlam_open2 y H11 H16.
+      forwards*: nlam_open2 y H11 H18.
       rewrite (subst_exp_intro y); eauto.
       rewrite (subst_term_intro y); eauto.
-      forwards*: H6 y.
+      forwards*: H5 y.
       eapply ttyp_sim; eauto.
       eapply ttyp_anno; eauto.
       eapply ttyping_c_subst_simpl; eauto.
-      forwards*: nlam_open3 y H16.
+      forwards*: nlam_open3 y H18.
       forwards*: nlam_open2 y H11 H12.
       omega. omega.
       ---
-      forwards*: nlam_exist H16. inverts H1.
+      forwards*: nlam_exist H18. inverts H1.
+      inverts H2. inverts H1.
       unfold open_term_wrt_term; simpl.
       pick fresh y.
-      forwards*: not_nlam_open e2 y H16.
+      forwards*: not_nlam_open e2 y H18.
       inverts lc. inverts H4.
       forwards* h2: valueb_value H7.
       forwards* h3: val_nlam_wal h2. 
@@ -1003,7 +1010,7 @@ Proof.
       rewrite H2.
       rewrite (subst_exp_intro y); eauto.
       rewrite (subst_term_intro y); eauto.
-      forwards*: H6 y.
+      forwards*: H5 y.
       unfold open_exp_wrt_exp in *.
       simpl in *.
       forwards*:ttyping_c_subst_simpl H4 H7.
@@ -1323,7 +1330,7 @@ Proof.
    lets(vv1&vv2&nn1&rred1&rred2&ttyp1&sz2): H1.
    forwards*: ttyping_regular_1 H.
    destruct(exists_decidable e).
-   inverts H2. 
+   inverts H2. inverts H3. inverts H2. 
    forwards*: value_valueb H. forwards*: bstep_not_value Red.
    forwards*: steps_nlam rred2.
    inverts* ttyp1; try solve[exfalso; apply H3; eauto].
@@ -1569,7 +1576,7 @@ Proof.
   try solve [inverts* typ].
   - inverts typ. 
     pick fresh x.
-    forwards*: H2.
+    forwards*: H6.
     forwards*: lc_lcb H. 
   - inverts typ.
     forwards*: value_lc H.
@@ -1861,7 +1868,7 @@ Proof.
       apply typ_sim; eauto.
       apply typ_anno; eauto.
       pick fresh y.
-      forwards*: H14.
+      forwards*: H17.
       rewrite (subst_exp_intro y); auto.
       rewrite (subst_term_intro y); auto.
       eapply typing_c_subst_simpl; auto.
@@ -1879,7 +1886,7 @@ Proof.
       apply bstep_refl.
       apply typ_anno; eauto.
       pick fresh y.
-      forwards*: H12.
+      forwards*: H15.
       rewrite (subst_exp_intro y); auto.
       rewrite (subst_term_intro y); auto.
       eapply typing_c_subst_simpl; auto.
@@ -2010,7 +2017,7 @@ Proof.
     eapply typ_sim; eauto.
     apply typ_anno; eauto.
     pick fresh y.
-    forwards*: H10.
+    forwards*: H13.
     rewrite (subst_exp_intro y); auto.
     rewrite (subst_term_intro y); auto.
     eapply typing_c_subst_simpl; auto.
@@ -2026,7 +2033,7 @@ Proof.
     apply bstep_refl. 
     apply typ_anno; eauto.
     pick fresh y.
-    forwards*: H7.
+    forwards*: H11.
     rewrite (subst_exp_intro y); auto.
     rewrite (subst_term_intro y); auto.
     eapply typing_c_subst_simpl; auto.
@@ -2140,7 +2147,7 @@ Proof.
     left. exists. splits*.
     rewrite h3; auto.
     forwards* h4: nlam_exist.
-    inverts h4.
+    lets (ee& ll & bb&hh1):h4. inverts hh1.
     inverts* H8.
 Qed.
 
@@ -2258,7 +2265,8 @@ Proof.
     rewrite H3 in *.
     eapply btyping_c_subst_simpl;eauto.
     omega. omega.
-    inverts H1; inverts H7.
+    lets (ee& ll & bb&hh1):H1. inverts hh1.
+    inverts H7.
   -
     inverts Typ.
     forwards* h1: valueb_value2 H7.
@@ -2299,8 +2307,10 @@ Proof.
     eapply Step_abeta;eauto.
     eapply btyp_cast;eauto.
     omega. omega.
-    inverts H1; try solve[inverts H12]. 
+    lets (ee& ll & bb&hh1):H1. inverts hh1.
+    try solve[inverts H12]. 
     +
+    lets (ee& ll & bb&hh1):H. inverts hh1.
     inverts* H; try solve[inverts H7].
   -
     inverts Typ.
@@ -2579,8 +2589,8 @@ Proof.
   -
     inverts Typ. inverts H7. inverts* H6;
     try solve[forwards*: abs_nlam].
-    forwards* lc: ttyping_regular_3 H10.
-    inverts* H10; try solve[inverts H14].
+    forwards* lc: ttyping_regular_3 H14.
+    inverts* H14; try solve[inverts H13].
     +
     inverts H. inverts H1.
     inverts lc.
@@ -2614,7 +2624,7 @@ Proof.
   -
     inverts Typ. inverts* H2. inverts* H5;
     try solve[forwards*: abs_nlam].
-    inverts* H8; try solve[inverts H12].
+    inverts* H12; try solve[inverts H11].
     +
     exists. splits.
     apply star_one.
@@ -2812,8 +2822,8 @@ Proof.
     inverts Typ. inverts H6. 
     inverts* H3; try solve[forwards*: abs_nlam].
     forwards*: value_valueb H5.
-    forwards*: value_valueb H14.
-    inverts* H14; try solve[inverts H17].
+    forwards*: value_valueb H16.
+    inverts* H16; try solve[inverts H17].
     +
     inverts H2.
     exists. splits.
@@ -2822,17 +2832,18 @@ Proof.
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
     rewrite (subst_term_intro y); eauto.
-    forwards*: H16 y.
+    forwards*: H18 y.
     simpl in *.
     eapply ttyp_sim; eauto.
     eapply ttyp_anno; eauto.
     eapply ttyping_c_subst_simpl; eauto.
-    forwards*: nlam_open3 y H17.
+    forwards*: nlam_open3 y H19.
     forwards*: nlam_open2 y H7 H3.
     +
-    forwards* h1: nlam_exist H17. inverts h1.
+    forwards* h1: nlam_exist H19.
+    lets (ee& ll & bb&hh1):h1. inverts hh1. 
     pick fresh y.
-    forwards* h2: not_nlam_open v y H17.
+    forwards* h2: not_nlam_open v y H19.
     inverts H2.
     exists. splits.
     apply star_one.
@@ -2842,7 +2853,7 @@ Proof.
     rewrite H2.
     rewrite (subst_exp_intro y); eauto.
     rewrite (subst_term_intro y); eauto.
-    forwards*: H16 y.
+    forwards*: H18 y.
     unfold open_exp_wrt_exp in *.
     simpl in *.
     forwards*:ttyping_c_subst_simpl H3 H5.
@@ -2911,17 +2922,18 @@ Proof.
     pick fresh y.
     rewrite (subst_exp_intro y); eauto.
     rewrite (subst_term_intro y); eauto.
-    forwards*: H12 y.
+    forwards*: H15 y.
     simpl in *.
     eapply ttyp_sim; eauto.
     eapply ttyp_anno; eauto.
     eapply ttyping_c_subst_simpl; eauto.
-    forwards*: nlam_open3 y H13.
+    forwards*: nlam_open3 y H16.
     forwards*: nlam_open2 y H7 H3.
     +
-    forwards* h1: nlam_exist H13. inverts h1.
+    forwards* h1: nlam_exist H16. 
+    lets (ee& ll & bb&hh1):h1. inverts hh1.
     pick fresh y.
-    forwards*: not_nlam_open v y H13.
+    forwards*: not_nlam_open v y H16.
     inverts H1.
     exists. splits.
     apply star_one.
@@ -2931,7 +2943,7 @@ Proof.
     rewrite H1.
     rewrite (subst_exp_intro y); eauto.
     rewrite (subst_term_intro y); eauto.
-    forwards*: H12 y.
+    forwards*: H15 y.
     unfold open_exp_wrt_exp in *.
     simpl in *.
     forwards*:ttyping_c_subst_simpl H4 H5.
