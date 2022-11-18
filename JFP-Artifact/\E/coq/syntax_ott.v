@@ -357,7 +357,7 @@ Inductive simpl_wf : simpl_item -> Prop :=
                      lc_exp e ->
                     simpl_wf (sproCtxL e)
      | swf_pror : forall (v : exp),
-                    value v ->
+                    walue v ->
                     simpl_wf (sproCtxR v)
      | swf_l : 
                     simpl_wf (slCtx)
@@ -513,6 +513,14 @@ Inductive gTypeLists : exp -> list typ -> res -> Prop :=    (* defn TypeLists *)
      gTypeLists  v1 (cons A B) Blame.
 
 
+Fixpoint erase (v:exp) : exp :=
+  match v with
+  | (e_abs e) => (e_anno (e_abs e) (t_arrow t_dyn t_dyn))
+  | (e_anno s A) => s
+  | _ => v
+  end.
+
+
 Inductive step : exp -> res -> Prop :=
    | Step_abs : forall e A B,
       lc_exp (e_abs e) ->
@@ -522,10 +530,14 @@ Inductive step : exp -> res -> Prop :=
    | Step_absd : forall e,
       lc_exp (e_abs e) ->
       step (e_anno (e_abs e) t_dyn) (Expr (e_anno (e_anno (e_abs e) (t_arrow t_dyn t_dyn)) t_dyn))
-   | Step_pro : forall s1 s2 A B,
+   (* | Step_pro : forall s1 s2 A B,
       ssval s1 ->
       ssval s2 ->
-      step (e_pro (e_anno s1 A) (e_anno s2 B)) (Expr (e_anno (e_pro s1 s2) (t_pro A B)))
+      step (e_pro (e_anno s1 A) (e_anno s2 B)) (Expr (e_anno (e_pro s1 s2) (t_pro A B))) *)
+   | Step_pro : forall v1 v2,
+      walue v1 ->
+      walue v2 ->
+      step (e_pro v1 v2) (Expr (e_anno (e_pro (erase v1) (erase v2)) (t_pro (principal_type v1) (principal_type v2))))
    | do_step E e1 e2 :
     simpl_wf E ->
     step e1 ( Expr e2 ) ->
@@ -595,13 +607,13 @@ Inductive step : exp -> res -> Prop :=
       value (e_anno (e_pro s1 s2) A) -> 
       pattern_pro A (t_pro A1 A2) ->
       step (e_r (e_anno (e_pro s1 s2) A)) (Expr (e_anno s2 A2))
-  | Step_al : forall e e2,
+  (* | Step_al : forall e e2,
       lc_exp (e_abs e) ->
       step (e_pro (e_abs e) e2) (Expr (e_pro (e_anno (e_anno (e_abs e) (t_arrow t_dyn t_dyn)) (t_arrow t_dyn t_dyn)) e2))
   | Step_ar : forall e v1,
       lc_exp (e_abs e) ->
       value v1 ->
-      step (e_pro v1 (e_abs e)) (Expr (e_pro v1 (e_anno (e_abs e) (t_arrow t_dyn t_dyn))))
+      step (e_pro v1 (e_abs e)) (Expr (e_pro v1 (e_anno (e_abs e) (t_arrow t_dyn t_dyn)))) *)
   | Step_nbeta : forall  (e:exp) (v v': exp),
       lc_exp (e_abs e) ->
       walue v ->

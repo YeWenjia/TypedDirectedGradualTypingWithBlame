@@ -100,6 +100,15 @@ Qed.
 
 
 
+Lemma walue_lc : forall v,
+    walue v -> lc_exp v.
+Proof.
+  intros v H.
+  induction* H.
+  forwards*: value_lc H. 
+Qed.
+
+
 
 Lemma val_wal : forall v,
     value v ->  walue v.
@@ -239,7 +248,19 @@ Proof.
   forwards*: do_step H0 H.
 Qed.
 
-
+Lemma wmulti_red_pro : forall v t t',
+    walue v -> t ->* (Expr t') -> (e_pro v t) ->* (Expr (e_pro v t')).
+Proof.
+  introv Val Red.
+  inductions Red; eauto.
+  -
+  assert(simpl_wf (sproCtxR v)). eauto.
+  forwards*: do_step H0 H.
+  -
+  forwards*: IHRed.
+  assert(simpl_wf (sproCtxR v)). eauto.
+  forwards*: do_step H1 H.
+Qed.
 
 Lemma multi_red_pro : forall v t t',
     value v -> t ->* (Expr t') -> (e_pro v t) ->* (Expr (e_pro v t')).
@@ -320,12 +341,12 @@ Proof.
   inverts H.
   unfold not;intros nt;inverts* nt; try solve[inverts H2].
   inverts H2. inverts H5.
-  -
+  (* -
   unfold not;intros nt;inverts* nt; try solve[inverts H2].
   -
   unfold not;intros nt;inverts* nt; try solve[inverts H2].
   inverts H0; inverts H3.
-  inverts H1.
+  inverts H1. *)
 Qed.
 
 

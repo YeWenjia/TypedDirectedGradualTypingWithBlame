@@ -116,6 +116,20 @@ Proof.
 Qed.
 
 
+Lemma principle_inf4: forall v A,
+  ssval v -> Typing nil v Inf A -> (principal_type v) = A .
+Proof.
+  introv Val Typ.
+  gen A.
+  induction Val; introv  Typ; try solve [inverts* Typ].
+  inverts* Typ; simpl in *.
+  forwards*: IHVal1.
+  forwards*: IHVal2.
+  rewrite H.
+  rewrite H0.
+  auto.
+Qed.
+
 
 Lemma TypedReduce_nlam: forall v A v',
     walue v -> TypedReduce v A (Expr v') -> nlam v'.
@@ -219,6 +233,51 @@ Qed.
 Hint Resolve ssval_nlam: core. 
 
 
+
+Lemma erase_pvalue: forall e,
+ walue e ->
+ ssval (erase e).
+Proof.
+  introv wal.
+  forwards* lc:walue_lc wal.
+  inverts* wal; simpl in *; eauto.
+  inverts* H.
+Qed.
+
+
+Lemma erase_prv: forall e A,
+Typing nil e Chk A -> 
+ walue e ->
+ sim (principal_type (erase e)) (principal_type e).
+Proof.
+  introv typ wal.
+  inverts* wal; simpl in *; eauto.
+  -
+  inverts* H; simpl in *.
+  inverts typ. inverts H.
+  inverts H5; try solve[inverts H0].
+  forwards*: principle_inf4 H.
+  rewrite H5; auto.
+Qed.
+
+
+Lemma erase_prv2: forall e A,
+walue e ->
+Typing nil e Inf A -> 
+exists B, Typing nil (erase e) Inf B.
+Proof.
+  introv wal typ.
+  inverts* wal; simpl in *; eauto.
+  -
+  inverts* H; simpl in *.
+  inverts typ. inverts* H2.
+  inverts* H0.
+  -
+  inverts* typ.
+Qed.
+
+
+
 Theorem preservation : forall e e' dir A,
     Typing nil e dir A ->
     step e (Expr e') ->
@@ -300,20 +359,29 @@ Proof.
   -
     inverts* J.
     +
-    inverts Typ1. inverts Typ2.
-    inverts H1; try solve[inverts H2].
-    inverts H4; try solve[inverts H3].
+    forwards* h1: principle_inf3 Typ1.
+    forwards* h2: principle_inf3 Typ2.
+    rewrite h1 in *. rewrite h2 in *.
     eapply Typ_anno; eauto.
+    rewrite <- h1 in *. rewrite <- h2 in *.
+    forwards* h5: Typing_chk Typ1. inverts h5.
+    forwards* h6: Typing_chk Typ2. inverts h6.
+    forwards* h3: erase_prv H2.
+    forwards* h33: erase_prv H3.
+    forwards* h7: erase_prv2 Typ1.
+    forwards* h8: erase_prv2 Typ2.
+    inverts h7. inverts h8.
+    forwards* h9: erase_pvalue H2.
+    forwards* h10: erase_pvalue H3.
+    forwards* h11: principle_inf4 H1.
+    forwards* h12: principle_inf4 H4.
+    rewrite h11 in *.
+    rewrite h12 in *.
+    eapply Typ_sim;eauto.
     +
     destruct E; unfold simpl_fill in *; inverts H.
     forwards*: IHTyp1 Typ1.
     forwards*: IHTyp2 Typ2.
-    +
-    inverts* Typ1.
-    eapply Typ_pro;eauto.
-    eapply Typ_anno;eauto.
-    +
-    inverts* Typ2.
   -
     inverts* J.
     +
@@ -444,7 +512,6 @@ Proof.
       inverts* H4.
       exists. eapply Step_absr; simpl;eauto.
     +
-      (* inverts Val1; try solve[inverts Typ1].  *)
       rewrite sfill_appr.  
       destruct e2'. exists.
       apply do_step; eauto. exists. apply blame_step; eauto.
@@ -506,11 +573,11 @@ Proof.
     lets* [Val1 | [e1' Red1]]: IHTyp1.
     lets* [Val2 | [e2' Red2]]: IHTyp2.
     +
-    inverts* Val1; try solve[inverts Typ1];
-    inverts* Val2; try solve[inverts Typ2].
-    inverts H; inverts* H0.
-    +
     inverts* Val1.
+    right.
+    rewrite sfill_pror. destruct e2'. 
+    exists.
+    apply do_step; eauto. exists. apply blame_step; eauto.
     right.
     rewrite sfill_pror. destruct e2'. 
     exists.

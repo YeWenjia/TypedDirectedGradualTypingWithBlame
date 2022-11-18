@@ -270,8 +270,8 @@ Proof.
     try solve[destruct E; unfold simpl_fill in H0; inverts* H0];
     try solve[destruct E; unfold simpl_fill in H1; inverts* H1];
     try solve[destruct E; unfold simpl_fill in H1; inverts* H1;
-    forwards*: step_not_value H3;
-    forwards*: step_not_value Red1].
+    forwards*: step_not_walue H3;
+    forwards*: step_not_walue Red1].
   - (* e1 e2 ---> e1' e2 *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in H0; inverts* H0];
@@ -294,10 +294,10 @@ Proof.
     + destruct E; unfold simpl_fill in *; inverts* H1.
       forwards*: step_not_walue Red1.
       forwards*: step_not_walue Red1.
-    + destruct E; unfold simpl_fill in *; inverts* H0. 
+    (* + destruct E; unfold simpl_fill in *; inverts* H0. 
       forwards*: step_not_value Red1.
       forwards*: step_not_walue Red1.
-      inverts H. inverts H2.
+      inverts H. inverts H2. *)
   - (* e1 e2 ---> blame e2 *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in H0; inverts* H0;
@@ -317,11 +317,11 @@ Proof.
     destruct E; unfold simpl_fill in *; inverts* H1. 
       forwards*: step_not_value Red1.
       forwards*: step_not_walue Red1.
-    +
+    (* +
     destruct E; unfold simpl_fill in H0; inverts* H0;
     forwards*: step_not_value Red1;
     forwards*: step_not_walue Red1.
-    inverts H. inverts H2.
+    inverts H. inverts H2. *)
   - (* e:a ---> e':a *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in H0; inverts* H0];
@@ -461,7 +461,8 @@ Proof.
    exfalso; apply H8; simpl; eauto.
    +
    forwards*: pattern_pro_uniq H0 H6. inverts* H1.
- -
+
+ (* -
     inverts* Red2;
    try solve[destruct E; unfold simpl_fill in H0; inverts* H0;
    forwards*: step_not_walue H2];
@@ -478,13 +479,13 @@ Proof.
    destruct E; unfold simpl_fill in H0; inverts* H0.
    inverts H1. inverts H3.
    +
-   inverts H4.
-  -
+   inverts H4. *)
+  (* -
   inverts* Red2;
   try solve[destruct E; unfold simpl_fill in *; inverts* H1;
   forwards*: step_not_walue H3];
   try solve[inverts H0];
-  try solve[forwards*: step_not_value H3].
+  try solve[forwards*: step_not_value H3]. *)
   -
   inverts* Red2;
   try solve[destruct E; unfold simpl_fill in *; inverts* H2;

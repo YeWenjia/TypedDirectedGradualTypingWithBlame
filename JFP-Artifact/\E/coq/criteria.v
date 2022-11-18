@@ -504,6 +504,10 @@ Proof.
   eapply multi_red_pro.
   auto. apply IHsval2.
   eapply star_one; eauto.
+  assert((e_anno (e_pro s1 s2) (t_pro (principal_type s1) (principal_type s2))) =
+  (e_anno (e_pro (erase (e_anno s1 (principal_type s1))) (erase (e_anno s2 (principal_type s2)))) (t_pro (principal_type (e_anno s1 (principal_type s1))) (principal_type ((e_anno s2 (principal_type s2)))))) ). simpl; eauto.
+  rewrite H.
+  eapply  Step_pro; eauto.
 Qed.
 
 
@@ -547,6 +551,7 @@ Proof.
   eapply multi_red_pro.
   auto. apply rred1.
   eapply star_one; eauto.
+  eapply  Step_pro; eauto.
   eapply value_pro; eauto.
   apply ep_anno; eauto.
   +
@@ -563,6 +568,7 @@ Proof.
   eapply multi_red_pro.
   auto. apply rred2.
   eapply star_one; eauto.
+  eapply  Step_pro; eauto.
   eapply value_pro; eauto.
   apply ep_anno; eauto.
   +
@@ -772,6 +778,31 @@ Proof.
   forwards*: epre_open H27 H21. 
 Qed.
 
+
+
+Lemma erase_epre: forall e1 e2,
+ walue e1 ->
+ walue e2 ->
+ epre e1 e2 ->
+ epre (erase e1) (erase e2).
+Proof.
+  introv wal1 wal2 ep.
+  inductions ep; try solve[inverts* wal1;inverts H];
+  try solve[inverts* wal2]; simpl;eauto.
+Qed.
+
+
+Lemma tpre_principle: forall e1 e2,
+ walue e1 ->
+ walue e2 ->
+ epre e1 e2 ->
+ tpre (principal_type e1) (principal_type e2).
+Proof.
+  introv wal1 wal2 ep.
+  inductions ep; simpl; eauto.
+  inverts wal1. inverts* wal2.
+  inverts* H;inverts* H0.
+Qed.
 
 
 Lemma dynamic_guarantee_chk_test: forall e1 e2 e1' T1 T2,
@@ -1101,42 +1132,40 @@ Proof.
     inverts red.
     +
     inverts typ1. inverts H.
+    forwards* h1: Typing_chk H7. inverts h1. 
+    forwards* h2: Typing_chk H8. inverts h2.
     forwards*: val_prel ep1.
     forwards*: val_prel ep2.
-    inverts H.
+    inverts H5.
     *
-      inverts* H4.
+      inverts* H6.
       --
-      inverts H5. 
-      ++ 
-      inverts* H.
-      inverts ep1; inverts* ep2.
-      inverts H4. inverts H5.
+      forwards*: erase_epre ep1.
+      forwards*: erase_epre ep2.
+      forwards*: tpre_principle ep1.
+      forwards*: tpre_principle ep2.
       exists. splits*.
-      inverts ep2.
-      ++
-      inverts ep1.
       --
-      lets(vv2&rred2&vval2&epp2): H. 
-      inverts epp2. inverts vval2.
-      forwards*: epre_lc ep2.
-      inverts ep2. inverts H4. 
-      inverts ep1. inverts H5. inverts H4.
+      lets(vv2&rred2&vval2&epp2): H5. 
+      forwards*: erase_epre ep1.
+      forwards*: erase_epre epp2.
+      forwards*: tpre_principle ep1.
+      forwards*: tpre_principle epp2.
       exists. splits.
       eapply star_trans.
-      eapply multi_red_pro.
+      eapply wmulti_red_pro.
       auto. apply rred2.
       eapply star_one.
       eapply Step_pro; auto.
       eapply ep_anno; eauto.
     *
-      inverts* H4.
+      inverts* H6.
       --
-      lets(vv2&rred2&vval2&epp2): H5. 
-      inverts epp2. inverts H. inverts H4.
-      inverts vval2. inverts H4.
-      forwards*: epre_lc ep2.
-      inverts ep2. 
+      lets(vv2&rred2&vval2&epp2): H9. 
+      forwards*: erase_epre epp2.
+      forwards*: erase_epre ep2.
+      forwards*: tpre_principle epp2.
+      forwards*: tpre_principle ep2.
       exists. splits.
       eapply star_trans.
       eapply multi_red_pro2.
@@ -1144,26 +1173,24 @@ Proof.
       eapply star_one.
       eapply Step_pro; auto.
       eapply ep_anno; eauto.
-      inverts ep2.
       --
-      lets(vv1&rred1&vval1&epp1): H5. 
-      lets(vv2&rred2&vval2&epp2): H. 
-      inverts vval1. inverts* vval2.
-      inverts epp2. inverts epp1.
-      inverts H4. inverts H6.
+      lets(vv1&rred1&vval1&epp1): H9. 
+      lets(vv2&rred2&vval2&epp2): H5. 
       forwards*: epre_lc ep2.
+      forwards*: erase_epre epp1.
+      forwards*: erase_epre epp2.
+      forwards*: tpre_principle epp1.
+      forwards*: tpre_principle epp2.
       exists. splits.
       eapply star_trans.
       eapply multi_red_pro2.
       auto. apply rred1.
       eapply star_trans.
-      eapply multi_red_pro.
+      eapply wmulti_red_pro.
       auto. apply rred2.
       eapply star_one.
       eapply Step_pro; auto.
       eapply ep_anno; eauto.
-      inverts epp2.
-      inverts epp1.
     +
     destruct E; unfold simpl_fill; inverts H.
     *
@@ -1189,50 +1216,21 @@ Proof.
     forwards* hb: val_prel ep1.
     inverts hb.
     --
-    inverts H7.
     exists(e_pro e1' vv1). split. 
-    apply multi_red_pro;auto.
+    apply wmulti_red_pro;auto.
     unfold simpl_fill. eauto.
-    inverts ep1. inverts H8.
     --
     lets(vv2&rred2&vval2&epp2): H7. 
     forwards*: Typing_regular_1 H11.
     forwards*: epre_lc ep2.
-    inverts vval2.
     exists(e_pro vv2 vv1). split. 
     eapply star_trans.
     apply multi_red_pro2;auto.
     apply rred2.
-    apply multi_red_pro.
+    apply wmulti_red_pro.
     eauto.
     apply rred1.
     unfold simpl_fill. eauto.
-    inverts epp2. inverts H8.
-   +
-     forwards*: Typing_regular_1 typ2. inverts H.
-     inverts ep1.
-     exists. splits.
-     apply star_one;eauto.
-     eapply ep_pro;eauto.
-     eapply ep_anno;eauto.
-    +
-    forwards*: Typing_regular_1 typ2. inverts H.
-    inverts typ1. inverts H.
-    forwards* h3: Typing_chk H9. inverts h3.
-    forwards* h4: vval_prel ep1.
-    inverts h4.
-    inverts ep2.
-    exists. splits.
-    apply star_one;eauto.
-    eapply ep_pro;eauto.
-    lets(vv2&rred2&vval2&epp2): H6.
-    inverts ep2.
-    exists. split. 
-    eapply star_trans.
-    apply multi_red_pro2;auto.
-    apply rred2.
-    apply star_one;eauto.
-     eapply ep_pro;eauto.
   -
     inverts red.
     +
