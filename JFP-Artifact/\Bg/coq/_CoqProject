@@ -2,6 +2,7 @@
 Deterministic.v
 Infrastructure.v
 Infrastructure_b.v
+Label.v
 LibTactics.v
 Type_Safety.v
 Typing.v
@@ -14,5 +15,6 @@ soundness.v
 soundness_blame.v
 syntax_ott.v
 syntaxb_ott.v
+syntaxl_ott.v
 syntaxn_ott.v
 ttyping.v

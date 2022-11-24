@@ -320,7 +320,7 @@ Inductive step : exp -> res -> Prop :=    (* defn step *)
     value v ->
     TypedReduce v A (e_exp v') ->
     step (e_app (e_anno (e_addl i) (t_arrow A B)) v)  (e_exp (e_anno (e_app (e_addl i) v') B) )  
- | Step_betap : forall (v1:exp) (A B:typ) (v2 v2':exp),
+ | Step_betap : forall (v1:exp) (A B:typ) (v2 :exp),
     value  ( (e_anno v1 (t_arrow A B)) )  ->
     TypedReduce v2 A e_blame ->
     value v2 ->
