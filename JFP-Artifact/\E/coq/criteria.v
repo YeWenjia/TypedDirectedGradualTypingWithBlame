@@ -1336,7 +1336,7 @@ Proof.
 Qed.
 
 
-Lemma dynamic_guarantee_dir_test: forall e1 e2 e1' dir T1 T2,
+Lemma dynamic_guarantee: forall e1 e2 e1' dir T1 T2,
  epre e1 e2 ->  
  Typing nil e1 dir T1 ->
  Typing nil e2 dir T2 -> 
@@ -1352,7 +1352,7 @@ Proof.
 Qed.
 
 
-Lemma dynamic_guarantees_test: forall e1 e2 dir m1 T1 T2,
+Lemma DGG: forall e1 e2 dir m1 T1 T2,
  epre e1 e2 ->  
  Typing nil e1 dir T1 ->
  Typing nil e2 dir T2 ->
@@ -1367,7 +1367,7 @@ Proof.
     destruct dir.
     *
     forwards*: Typing_chk typ1. inverts H1.
-    forwards*: dynamic_guarantee_dir_test ep typ1 typ2 H.
+    forwards*: dynamic_guarantee ep typ1 typ2 H.
     lets(vv1&rred1&epp1):H1.
     forwards*: preservation H2 H.
     forwards*: val_prel epp1.
@@ -1375,7 +1375,7 @@ Proof.
     lets(vv2&rred2&vval1&epp2):H5.
     exists*.
     *
-    forwards*: dynamic_guarantee_dir_test ep typ1 typ2 H.
+    forwards*: dynamic_guarantee ep typ1 typ2 H.
     lets(vv1&rred1&epp1):H1.
     forwards*: preservation typ1 H.
     forwards*: val_prel epp1.
@@ -1388,7 +1388,7 @@ Proof.
     destruct E; unfold simpl_fill;inverts* H1 .
     *
     inverts* H2.
-  - forwards*: dynamic_guarantee_dir_test ep typ1 typ2 H.
+  - forwards*: dynamic_guarantee ep typ1 typ2 H.
     inverts H0. inverts H1.
     forwards*: preservation H.
     forwards*: preservation_multi_step H0.

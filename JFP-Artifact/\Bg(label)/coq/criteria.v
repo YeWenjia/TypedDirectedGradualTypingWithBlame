@@ -6423,7 +6423,7 @@ Qed.
 
 
 
-Lemma dynamic_guarantee_dir_test: forall e1 e2 e1' dir T1 T2,
+Lemma dynamic_guarantee_dir: forall e1 e2 e1' dir T1 T2,
  epre nil nil e1 e2 ->  
  Typing nil e1 dir T1 ->
  Typing nil e2 dir T2 -> 
@@ -6440,7 +6440,7 @@ Qed.
 
 
 
-Lemma dynamic_guarantee_dir_test_less: forall e1 e2 e2' dir T1 T2,
+Lemma dynamic_guarantee_less: forall e1 e2 e2' dir T1 T2,
  epre nil nil e1 e2 ->  
  Typing nil e1 dir T1 ->
  Typing nil e2 dir T2 -> 
@@ -6477,7 +6477,7 @@ Proof.
     inverts H. inverts H0. inverts* H.
     right*.
   - 
-    forwards*: dynamic_guarantee_dir_test_less ep typ1 typ2 H.
+    forwards*: dynamic_guarantee_less ep typ1 typ2 H.
     inverts* H0. inverts H1. inverts* H0.
     forwards*: preservation H.
     forwards*: preservation_multi_step H1.
@@ -6509,7 +6509,7 @@ Proof.
     inverts H. inverts H2. inverts* H3.
     forwards*: epre_val ep.
     inverts H. inverts H0. inverts* H1.
-  - forwards*: dynamic_guarantee_dir_test ep typ1 typ2 H.
+  - forwards*: dynamic_guarantee_dir ep typ1 typ2 H.
     inverts H0. inverts H1.
     forwards*: preservation H.
     forwards*: preservation_multi_step H0.

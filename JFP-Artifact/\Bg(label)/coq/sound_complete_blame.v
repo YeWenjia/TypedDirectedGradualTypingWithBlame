@@ -356,7 +356,7 @@ Proof.
 Qed.
 
 
-Theorem typing_elaborate_completeness_blame_: forall e t A n n1 l b,
+Theorem ttyping_completeness_blame: forall e t A n n1 l b,
   Deterministic_blame_Calculus ->
   n < n1 ->
   btyping nil t A e ->

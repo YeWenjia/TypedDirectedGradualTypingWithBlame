@@ -2512,7 +2512,7 @@ Proof.
 Qed.
 
 
-Theorem typing_elaborate_completeness_all: forall e t t' A n,
+Theorem ttyping_completeness: forall e t t' A n,
   Deterministic_blame_Calculus ->
   btyping nil t A e ->
   bbsteps t (t_term t') n ->

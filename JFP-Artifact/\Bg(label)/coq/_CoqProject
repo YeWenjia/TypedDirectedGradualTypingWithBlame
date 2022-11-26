@@ -10,8 +10,8 @@ criteria.v
 rules_inf.v
 rulesb_inf.v
 safe_theorem.v
+sound_complete_blame.v
 soundness_completeness.v
-soundness_completeness_blame.v
 syntax_ott.v
 syntaxb_ott.v
 ttyping.v

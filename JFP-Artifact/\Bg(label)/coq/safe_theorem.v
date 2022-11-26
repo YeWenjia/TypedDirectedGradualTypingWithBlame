@@ -887,4 +887,16 @@ Proof.
     inverts* Typ. inverts* H.
 Qed.
 
-
+Lemma Safe_progress: forall e A l b dir,
+ Typing nil e dir A ->
+ Safe nil e l b ->
+ not(step e (e_blame l b)).
+Proof.
+  introv typ sf.
+  destruct dir.
+  -
+  forwards*: Typing_chk2 typ.
+  forwards*: safe_progress sf.
+  -
+  forwards*: safe_progress sf.
+Qed.
