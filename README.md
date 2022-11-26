@@ -66,7 +66,7 @@ This section explains how to build the artifact from scratch
 
 ## Correspondence
 
-There are three folders and we show some important definitions and theorems correspondence with the coq formalization. 
+There are three folders and we show some important definitions and theorems correspondence with the coq formalization. The following three tables show the correspondence between lemmas discussed in paper and their source coq code. For example, one can find the `Lemma 3.5 (Preservation)` in file `\Bg/coq/Type_Safety.v` and the lemma name in file is `TypedReduce_preservation`.
 
 ### \Bg/coq folder :
 
