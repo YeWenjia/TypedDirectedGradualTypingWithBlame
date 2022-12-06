@@ -25,6 +25,7 @@ This section explains how to build the artifact from scratch
    1. Open terminal
    2. `git clone https://github.com/plclub/metalib`
    3. `cd metalib/Metalib`
+   4.  Make sure the version is correct by `git checkout 597fd7d`
    5. `make install`
 
 
