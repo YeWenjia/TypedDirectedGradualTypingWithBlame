@@ -106,10 +106,10 @@ There are three folders and we show some important definitions and theorems corr
 | Fig.13               | Positive              | Bgl/coq/syntax\_ott.v             | suba                       |
 | Fig.13               | Negative              | Bgl/coq/syntax\_ott.v             | subb                       |
 | Fig.13               | Safe expression       | Bgl/coq/syntax\_ott.v             | Safe                       |
-| Lemma 4.6            | Fractoring(subtype)   | Bgl/coq/safe\_theorem.v           | ssub\_factoring\_right     |
-| Lemma 4.6            | Fractoring(subtype)   | Bgl/coq/safe\_theorem.v           | ssub\_factoring            |
-| Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | ttpre\_factoring           |
-| Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | ttpre\_factoring\_right    |
+| Lemma 4.6            | Fractoring(subtype)   | Bgl/coq/safe\_theorem.v           | sub\_factoring\_right     |
+| Lemma 4.6            | Fractoring(subtype)   | Bgl/coq/safe\_theorem.v           | sub\_factoring            |
+| Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | tpre\_factoring           |
+| Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | tpre\_factoring\_right    |
 | Lemma 4.8            | Preservation(safe)    | Bgl/coq/safe\_theorem.v           | Safe\_preservation         |
 | Lemma 4.9            | Progress(safe)        | Bgl/coq/safe\_theorem.v           | Safe\_progress             |
 | Fig. 14              | Syntax                | E/coq/syntax\_ott.v               |                            |
