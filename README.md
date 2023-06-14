@@ -53,7 +53,7 @@ There are three folders and we show some important definitions and theorems corr
 | Definition 3.1       | dynamic type          | Bg/coq/syntax\_ott.v              | dynamic\_type              |
 | Fig. 3               | Typing                | Bg/coq/syntax\_ott.v              | Typing                     |
 | Lemma 3.1            | Dynamic type          | Bg/coq/Typing.v                   | principle\_inf             |
-| Lemma 3.2            | Inference             | Bg/coq/Typing.v                   | Typing\_chk                |
+| Lemma 3.2            | Inference             | Bg/coq/Typing.v                   | Typing\_Chk                |
 | Lemma 3.3            | Typing unique         | Bg/coq/Typing.v                   | inference\_unique          |
 | Fig.4                | Casting               | Bg/coq/syntax\_ott.v              | Cast                       |
 | Lemma 3.4            | Casting value         | Bg/coq/Type\_Safety.v             | Cast\_value                |
@@ -134,6 +134,7 @@ There are three folders and we show some important definitions and theorems corr
 | Theorem 5.5          | DGG                   | E/coq/criteria.v                  | dynamic\_guaranteel\_dir   |
 | Theorem 5.6          | DGG                   | E/coq/criteria.v                  | DGGL                       |
 | Theorem 5.6          | DGG                   | E/coq/criteria.v                  | DGGR                       |
+| Theorem 5.6          | DGG                   | E/coq/criteria.v                  | Diverge                    |
 
 
 ## Proof Structure
@@ -158,5 +159,5 @@ There are three folders and we show some important definitions and theorems corr
 - `Bg/coq/soundness.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
 - `Bg/coq/soundness_blame.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
 - `Bg(label)/coq/soundness_completeness.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with  blame   label.
-- `Bg(label)/coq/sound_complete_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
+- `Bg(label)/coq/soundness_completeness_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
 - `Bg(label)/coq/safe_theorem.v` contains the proofs of blame theorems.
