@@ -110,8 +110,8 @@ There are three folders and we show some important definitions and theorems corr
 | Lemma 4.6            | Fractoring(subtype)   | Bgl/coq/safe\_theorem.v           | sub\_factoring            |
 | Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | tpre\_factoring           |
 | Lemma 4.7            | Fractoring(precision) | Bgl/coq/safe\_theorem.v           | tpre\_factoring\_right    |
-| Lemma 4.8            | Preservation(safe)    | Bgl/coq/safe\_theorem.v           | Safe\_preservation         |
-| Lemma 4.9            | Progress(safe)        | Bgl/coq/safe\_theorem.v           | Safe\_progress             |
+| Lemma 4.8            | Preservation(safe)    | Bgl/coq/safe\_theorem.v           | safe\_preservation         |
+| Lemma 4.9            | Progress(safe)        | Bgl/coq/safe\_theorem.v           | safe\_progress             |
 | Fig. 14              | Syntax                | E/coq/syntax\_ott.v               |                            |
 | Fig. 15              | Typing                | E/coq/syntax\_ott.v               | Typing                     |
 | Fig. 15              | Type precision        | E/coq/syntax\_ott.v               | tpre                       |
