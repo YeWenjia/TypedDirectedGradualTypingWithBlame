@@ -115,7 +115,7 @@ There are three folders and we show some important definitions and theorems corr
 | Fig. 14              | Syntax                | E/coq/syntax\_ott.v               |                            |
 | Fig. 15              | Typing                | E/coq/syntax\_ott.v               | Typing                     |
 | Fig. 15              | Type precision        | E/coq/syntax\_ott.v               | tpre                       |
-| Definition 5.1       | Dynamic type          | E/coq/syntax\_ott.v               | principal\_type             |
+| Definition 5.1       | Dynamic type          | E/coq/syntax\_ott.v               | dynamic\_type            |
 | Lemma 5.1            | Dynamic type          | E/coq/Typing.v                    | principle\_inf              |
 | Lemma 5.2            | Dynamic type          | E/coq/Typing.v                    | principle\_inf2            |
 | Lemma 5.3            | Inference unique      | E/coq/Typing.v                    | inference\_unique          |
