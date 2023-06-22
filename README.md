@@ -31,7 +31,7 @@ This section explains how to build the artifact from scratch
 
 ### Build and Compile the Proofs
 
-1. Enter  `\Bg/coq`, `\Bg(label)/coq` or ``\E/coq``  directory.
+1. Enter  `Bg/coq`, `Bgl/coq` or ``E/coq``  directory.
 
 2. Please make sure to run the command `eval \$(opam env)` before running make if 
    you installed the Coq via opam. 
