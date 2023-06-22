@@ -97,7 +97,7 @@ There are three folders and we show some important definitions and theorems corr
 | Lemma 4.5            | DGG(casting)          | Bgl/coq/criteria.v                | Cast\_dgg                  |
 | Theorem 4.7          | DGG1                  | Bgl/coq/criteria.v                | dynamic\_guarantee\_dir    |
 | Theorem 4.8          | DGG2                  | Bgl/coq/criteria.v                | dynamic\_guarantee\_less   |
-| Theorem 4.8          | DGG2                  | Bgl/coq/criteria.v                | dynamic\_guarantees\_blame |
+| Theorem 4.8          | DGG2                  | Bgl/coq/criteria.v                | dynamic\_guarantee\_blame |
 | Theorem 4.9          | DGG                   | Bgl/coq/criteria.v                | dynamic\_guarantees        |
 | Theorem 4.9          | DGG                   | Bgl/coq/criteria.v                | diverge\_case              |
 | Theorem 4.9          | DGG                   | Bgl/coq/criteria.v                | dynamic\_guarantees\_less  |
