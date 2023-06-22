@@ -78,7 +78,7 @@ There are three folders and we show some important definitions and theorems corr
 | Fig. 8               | Reduction             | Bgl/coq/syntax\_ott.v             | sstep                      |
 | Fig. 9               | Reduction             | Bgl/coq/syntax\_ott.v             | step                       |
 | Fig. 11              | Elaboration           | Bgl/coq/syntax\_ott.v             | typing                     |
-| Fig. 12              | Elaboration           | Bgl/coq/syntax\_ott.v             | btyping                    |
+| Fig. 11              | Elaboration           | Bgl/coq/syntax\_ott.v             | btyping                    |
 | Theorem 4.2          | Elaboration           | Bgl/coq/ttyping.v                 | elaboration\_soundness     |
 | Theorem 4.2          | Elaboration           | Bgl/coq/ttyping.v                 | btyping\_typing            |
 | Lemma 4.1            | Soundness(cast)       | Bgl/coq/soundness\_completeness.v | Casting\_soundness         |
