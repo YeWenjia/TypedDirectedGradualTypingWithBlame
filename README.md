@@ -156,8 +156,6 @@ There are three folders and we show some important definitions and theorems corr
 - `ttyping.v` contains the proofs of some elaboration typing lemmas.
 - `criteria.v` contains the proofs of gradual guarantee theorem.
 - `Type_Safety.v` contains the proofs of the type preservation and progress properties.
-- `Bg/coq/soundness.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
-- `Bg/coq/soundness_blame.v` contains the proofs of the soundness theorem with respect to blame calculus without blame label.
 - `Bg(label)/coq/soundness_completeness.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with  blame   label.
-- `Bg(label)/coq/soundness_completeness_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
+- `Bg(label)/coq/sound_complete_blame.v` contains the proofs of the soundness and completeness theorems with respect to blame calculus with blame label.
 - `Bg(label)/coq/safe_theorem.v` contains the proofs of blame theorems.
