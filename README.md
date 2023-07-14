@@ -129,12 +129,13 @@ There are three folders and we show some important definitions and theorems corr
 | Theorem 5.2          | Preservation          | E/coq/Type\_Safety.v              | preservation               |
 | Theorem 5.3          | Progress              | E/coq/Type\_Safety.v              | Progress                   |
 | Fig. 18              | Term precision        | E/coq/syntax\_ott.v               | epre                       |
-| Theorem 5.4          | SGG                   | E/coq/criteria.v                  | SGG\_both                  |
+| Theorem 5.4          | Embedding             | E/coq/embed.v                    | dynamic\_typing            |
+| Theorem 5.5          | SGG                   | E/coq/criteria.v                  | SGG\_both                  |
 | Lemma 5.7            | DGG(casting)          | E/coq/criteria.v                  | Cast\_dgg                  |
-| Theorem 5.5          | DGG                   | E/coq/criteria.v                  | dynamic\_guaranteel\_dir   |
-| Theorem 5.6          | DGG                   | E/coq/criteria.v                  | DGGL                       |
-| Theorem 5.6          | DGG                   | E/coq/criteria.v                  | DGGR                       |
-| Theorem 5.6          | DGG                   | E/coq/criteria.v                  | Diverge                    |
+| Theorem 5.6          | DGG                   | E/coq/criteria.v                  | dynamic\_guaranteel\_dir   |
+| Theorem 5.7          | DGG                   | E/coq/criteria.v                  | DGGL                       |
+| Theorem 5.7          | DGG                   | E/coq/criteria.v                  | DGGR                       |
+| Theorem 5.7          | DGG                   | E/coq/criteria.v                  | Diverge                    |
 
 
 ## Proof Structure
