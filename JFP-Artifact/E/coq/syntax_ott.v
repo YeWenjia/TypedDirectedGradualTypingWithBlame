@@ -330,47 +330,28 @@ Fixpoint erase (v:exp) : exp :=
 
 
 
-Inductive Cast : exp -> typ -> typ -> res -> Prop :=    
- | Cast_lit : forall i (A:typ) (B:typ) A',
-     Cast (e_lit i)  A A' (Expr (e_val (e_lit i) A'))
- | Cast_abs : forall e A B C D D', 
+Inductive Cast : exp -> typ -> res -> Prop :=    
+ | Cast_lit : forall i (A:typ) (B:typ),
+     Cast (e_lit i)  A  (Expr (e_lit i))
+ | Cast_abs : forall e A B C D, 
     sim (t_arrow A B) D ->
-    Cast (e_anno (e_anno (e_abs e) (t_arrow A B)) C) D D' (Expr (e_val (e_anno (e_anno (e_abs e) (t_arrow A B)) D) D'))
- | Cast_absp : forall e A B C D D', 
+    Cast (e_anno (e_anno (e_abs e) (t_arrow A B)) C) D  (Expr (e_anno (e_anno (e_abs e) (t_arrow A B)) D))
+ | Cast_absp : forall e A B C D , 
     not(sim (t_arrow A B) D) ->
-    Cast (e_anno (e_anno (e_abs e) (t_arrow A B)) C) D D' Blame
- | Cast_pro: forall p1 p2 A1 A2 p1' p2' B B1 B2,
-    pattern_pro B (t_pro B1 B2) ->
-    Cast p1 A1 B1 (Expr (e_val p1' B1)) ->
-    Cast p2 A2 B2 (Expr (e_val p2' B2)) ->
-    Cast (e_pro p1 p2) (t_pro A1 A2) B (Expr (e_val (e_pro p1' p2') B))
- | Cast_prol: forall p1 p2 A1 A2 B B1 B2,
-    pattern_pro B (t_pro B1 B2) ->
-    Cast p1 A1 B1 Blame ->
-    Cast (e_pro p1 p2) (t_pro A1 A2) B Blame
- | Cast_pror: forall p1 p2 A1 A2 B B1 B2,
-    pattern_pro B (t_pro B1 B2) ->
-    Cast p2 A2 B2 Blame ->
-    Cast (e_pro p1 p2) (t_pro A1 A2) B Blame
+    Cast (e_anno (e_anno (e_abs e) (t_arrow A B)) C) D  Blame
+ | Cast_pro: forall p1 p2 A1 A2 p1' p2' ,
+    Cast p1 A1  (Expr p1') ->
+    Cast p2 A2  (Expr  p2') ->
+    Cast (e_pro p1 p2) (t_pro A1 A2) (Expr (e_pro p1' p2'))
+ | Cast_prol: forall p1 p2 A1 A2,
+    Cast p1 A1  Blame ->
+    Cast (e_pro p1 p2) (t_pro A1 A2) Blame
+ | Cast_pror: forall p1 p2 A1 A2,
+    Cast p2 A2 Blame ->
+    Cast (e_pro p1 p2) (t_pro A1 A2) Blame
 .
 
 
-(* Inductive Cast : exp -> typ -> typ -> res -> Prop :=    
- | cast_exp : forall p A B A' p' C,
-     meet A B A' ->
-     sim (dynamic_type p) A' ->
-     Cast p A' (Expr p') ->
-     Cast  (e_val p A) B C (Expr (e_val p' C))
- | cast_expp : forall p A B A' C,
-     meet A B A' ->
-     sim (dynamic_type p) A' ->
-     Cast p A' Blame ->
-     Cast  (e_val p A) B C Blame
- | cast_blame : forall p (A:typ) A' (B:typ) C,
-     meet A B A' ->
-     not(sim (dynamic_type p) A') ->
-     Cast  (e_val p A) B C Blame
-. *)
 
 
 (* Inductive TypeLists : exp -> list typ -> res -> Prop :=  
@@ -412,14 +393,19 @@ Inductive step : exp -> res -> Prop :=
      not(sim (dynamic_type p1) (t_arrow t_dyn t_dyn)) ->
      pval p1 ->
      step (e_app (e_val p1 A) e2)  Blame
-  | Step_annov : forall p (A:typ) B r A',
-     Cast p A' B r ->
+  | Step_annov : forall p (A:typ) B p' A',
+     Cast p A' (Expr p') ->
      meet (dynamic_type p) B A' ->
      pval p ->
-     step (e_anno (e_val p A) B) r
+     step (e_anno (e_val p A) B) (Expr (e_val p' B))
   | Step_annop : forall p (A:typ) B,
-     not(sim (dynamic_type p) B) ->
+     (not(sim (dynamic_type p) B) ) ->
       pval p ->
+     step (e_anno (e_val p A) B) Blame
+ | Step_annop2 : forall p (A:typ) B A',
+     Cast p A' Blame ->
+     meet (dynamic_type p) B A' ->
+     pval p ->
      step (e_anno (e_val p A) B) Blame
   | Step_lp : forall p A,
        not(sim (dynamic_type p) (t_pro t_dyn t_dyn)) ->

@@ -561,74 +561,6 @@ Proof.
 Qed.
 
 
-(* Lemma Cast_dgg: forall e1 e2 e1' A B A1 B1,
- epre e1 e2 ->  
- tpre A B ->
- value e1 ->
- value e2 ->
- Typing nil e1 Chk A1 ->
- Typing nil e2 Chk B1 -> 
- Cast e1 A (Expr e1') ->
- exists e2', Cast e2 B (Expr e2') /\ epre e1' e2'.
-Proof.
-  introv ep tp val1 val2 typ1 typ2 red. gen e2 B A1 B1.
-  inductions red; intros; eauto.
-  -
-  inverts val2. inverts ep.
-  inverts H6.
-  assert(tpre t_int t_int) as h1; auto.
-  forwards*: epre_sim H h1 tp.
-  -
-  inverts ep as h1 h2. inverts h2 as h3 h4.
-  inverts h4.   
-  inverts typ2. inverts H2. inverts H9. inverts H2.
-  forwards* h5: meet_progress H4.
-  lets(t&h6): h5.
-  forwards* h7: meet_tpre H h6.
-  assert(tpre (t_arrow A1 A2) (t_arrow A4 B7)) as h9; auto.
-  forwards* h8: epre_sim H0 h9 h7.
-  forwards* h10: epre_sim H1 h7 tp.
-  exists*.
-  -
-  inverts ep as h1 h2. inverts h2 as h3 h4.
-  forwards* h5: dmatch_pro_tpre h1.
-  forwards* h6: dmatch_pro_tpre tp.
-  lets(t1&h7&h8):h5.
-  lets(t2&h9&h10):h6.
-  inverts h8; try solve[inverts h7].
-  inverts h10; try solve[inverts h9].
-  inverts val1. inverts H2.
-  inverts val2. inverts H2.
-  inverts typ1. inverts H1.
-  inverts typ2. inverts H1.
-  inverts H13. inverts H15.
-  inverts H1. inverts H13.
-  assert(sim A6 A1).
-  inverts H; try solve[inverts* H12].
-  assert(sim A7 A2).
-  inverts H; try solve[inverts* H12].
-  assert(sim A4 C).
-  inverts h7; try solve[inverts* H14].
-  assert(sim A8 D).
-  inverts h7; try solve[inverts* H14].
-  forwards* h12: dmatch_pro_tpre2 tp.
-  inverts h12.
-  forwards* h11: IHred1 v1 (e_anno e1' C) H24; auto.
-  lets(ee1&rred1&eep1):h11.
-  forwards* h13: IHred2 v2 (e_anno e2' D) H26; auto.
-  lets(ee2&rred2&eep2):h13.
-  forwards*: Cast_prv_value red1.
-  forwards*: Cast_prv_value red2.
-  forwards*: Cast_prv_value rred1.
-  forwards*: Cast_prv_value rred2.
-  forwards*: erase_epre eep1.
-  forwards*: erase_epre eep2.
-  exists.
-  splits*.
-Qed. *)
-
-
-
 
 
 Lemma tpre_principle: forall e1 e2,
@@ -657,15 +589,6 @@ Qed.
 
 
 
-Lemma cast_anno: forall p A B p' t,
- Cast p A B (Expr (e_val p' t)) ->
- t = B.
-Proof.
-  introv red.
-  inductions red; eauto.
-Qed.
-
-
 
 Lemma Cast_dgg: forall p1 p2 v1' A1 B1 A2 B2 t1 t2,
   epre p1 p2 ->  
@@ -676,10 +599,10 @@ Lemma Cast_dgg: forall p1 p2 v1' A1 B1 A2 B2 t1 t2,
   Typing nil p2 Chk t2 -> 
   meet (dynamic_type p1) A2 A1 ->
   meet (dynamic_type p2) B2 B1 ->
-  Cast p1 A1 A2 (Expr v1') ->
-  exists v2', Cast p2 B1 B2 (Expr v2') /\ epre v1' v2'.
+  Cast p1 A1 (Expr v1') ->
+  exists v2', Cast p2 B1 (Expr v2') /\ epre (e_val v1' A2) (e_val v2' B2).
 Proof.
-  introv ep tp val1 val2 typ1 typ2 mt1 mt2 red. gen p2 B1 B2 t1 t2.
+  introv ep tp val1 val2 typ1 typ2 mt1 mt2 red. gen p2 A2 B1 B2 t1 t2.
   inductions red; intros; eauto.
   -
     inverts* ep.
@@ -703,38 +626,38 @@ Proof.
     exists. splits*.
     eapply ep_val;eauto. 
   -
+    assert(exists t1 t2, pattern_pro A0 (t_pro t1 t2)) as h0.
+    inverts* mt1.
+    lets(ttt1&ttt2&H):h0.
     forwards* h1: dmatch_pro_tpre tp H.
     lets(tt1& h2&h3):h1.
     inverts h3 as h3; try solve[inverts h2].
     inverts ep as ep1 ep2.
     inverts val2 as h4 h5.
     simpl in *.
-    assert(meet (dynamic_type p1) B1 A1) as h7.
+    assert(meet (dynamic_type p1) ttt1 A1) as h7.
     inverts H; try solve[inverts* mt1].
-    assert(meet (dynamic_type p2) B2 A2) as h8.
+    assert(meet (dynamic_type p2) ttt2 A2) as h8.
     inverts H; try solve[inverts* mt1].
     forwards* h11: meet_more_precise mt2.
     lets(h12&h13): h11.
     inverts h12 as h12.
     assert(meet (dynamic_type e1') C A) as h9.
     inverts h2; try solve[inverts* mt2].
-    assert(meet (dynamic_type e2') D B4) as h10.
+    assert(meet (dynamic_type e2') D B) as h10.
     inverts h2; try solve[inverts* mt2].
     inverts val1 as val11 val12.
     inverts typ1 as typ1.
     inverts typ1 as typ1.
     inverts typ2 as typ2.
     inverts typ2 as typ2.
-    forwards* h6: IHred1  h7 ep1 h9.
+    forwards* h6: IHred1 ep1 h7 h9.
     lets(vv1&h14&h15):h6.
-    forwards* h16: IHred2  h8 ep2 h10.
+    forwards* h16: IHred2 ep2 h8  h10.
     lets(vv2&h17&h18):h16.
     inverts h15.
     inverts* h18.
-    forwards* h19: cast_anno h14.  
-    forwards* h20: cast_anno h17.
-    subst.
-    assert(tpre (dynamic_type (e_pro p3 p4)) B3).
+    assert(tpre (dynamic_type (e_pro vv1 vv2)) B2).
     simpl.
     inverts* h2.
     exists. splits*.
@@ -849,14 +772,14 @@ Proof.
       inverts typ2 as typ2.
       inverts typ2 as typ2.
       inverts typ2.
-      forwards* h1: meet_sim H3.
+      forwards* h1: meet_sim H4.
       lets(h2&h3&h4): h1.
       forwards* h5: pval_tpre_principle H6.
       forwards* h6: epre_sim h2 h5 H.
       forwards* h7: meet_progress  h6.
       lets(tt1&h8):h7.
-      forwards* h9: meet_tpre H3 h8.
-      forwards* h10: Cast_dgg H6 H3 h8 H2.
+      forwards* h9: meet_tpre H4 h8.
+      forwards* h10: Cast_dgg H6 H4 h8 H3.
       lets(ee1&h11&h12):h10.
       exists. splits*.
   - (* pro *)

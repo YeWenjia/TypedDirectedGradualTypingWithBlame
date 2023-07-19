@@ -83,12 +83,12 @@ Hint Resolve sim_refl : core.
 
 
 Lemma Cast_preservation: forall p A v' B,
-    pval p -> Cast p A B (Expr v') -> meet (dynamic_type p) B A -> 
-    Typing nil p Chk A -> Typing nil v' Inf B.
+    pval p -> Cast p A (Expr v') -> meet (dynamic_type p) B A -> 
+    Typing nil p Chk A -> Typing nil (e_val v' B) Inf B.
 Proof with auto.
   introv Val Red mt Typ.
-  lets Red': Red.
-  inductions Red;try solve[inverts* Val]; 
+  lets Red': Red. gen B.
+  inductions Red;intros;try solve[inverts* Val]; 
   lets Lc : Typing_regular_1 Typ;
   try solve [constructor*]; simpl in *.
   -
@@ -115,9 +115,8 @@ Proof with auto.
     inverts Typ as h3 h4.
     inverts h3 as h5 h6.
     inverts h4 as h7 h8.
-    inverts H.
-    +
     inverts mt as h9 h10.
+    +
     forwards* h11: IHRed1 h9.
     forwards* h12: IHRed2 h10.
     inverts* h11.
@@ -135,7 +134,7 @@ Proof with auto.
     +
     forwards* h13: principle_inf h5.
     forwards* h14: principle_inf h6.
-    inverts mt. 
+    (* inverts mt.  *)
     forwards* h11: IHRed1.
     forwards* h12: IHRed2.
     inverts h11.
@@ -223,16 +222,17 @@ Proof.
       destruct E; unfold simpl_fill in *; inverts H.
       forwards*: IHTyp.
     + 
-      forwards* h1: meet_more_precise H2.
+      forwards* h1: meet_more_precise H3.
       inverts h1.
       forwards* h2: tpre_sim H.
       inverts Typ as typ.
       inverts typ.
       inverts H10; try solve[inverts H8].
-      forwards* h3: principle_inf H3.
+      forwards* h3: principle_inf H1.
       rewrite h3 in *.
-      eapply Cast_preservation; eauto.
-      rewrite h3 in *; eauto.
+      eapply sim_sym in h2.
+      rewrite <- h3 in *.
+      forwards* h5: Cast_preservation H2 H3. 
   - (* pro *)
     inverts* J.
     +
@@ -324,7 +324,7 @@ Qed.
 
 Lemma Cast_progress: forall p A A',
     pval p -> Typing [] p Chk A' -> 
-    meet (dynamic_type p) A A' -> exists r, Cast p A' A r.
+    meet (dynamic_type p) A A' -> exists r, Cast p A' r.
 Proof.
   introv Val Typ mt. gen A A'.
   inductions Val; intros; simpl in *; eauto.
@@ -348,18 +348,18 @@ Proof.
     inverts h9.
     * 
     inverts mt as h4 h5.
-    forwards* h6: IHVal1  t_dyn (dynamic_type u1).
-    forwards* h7: IHVal2  t_dyn (dynamic_type u2).
+    forwards* h6: IHVal1 t_dyn (dynamic_type u1).
+    forwards* h7: IHVal2 t_dyn (dynamic_type u2).
     inverts h6 as h6.
     inverts h7 as h7.
     destruct x; eauto.
     destruct x0; eauto.
-    forwards* h12: Cast_preservation h6.
+    (* forwards* h12: Cast_preservation h6.
     forwards* h13: Cast_preservation h7.
     forwards* h14: Cast_prv_value h6.
     forwards* h15: Cast_prv_value h7.
     inverts h14; inverts h12.
-    inverts h15; inverts* h13.
+    inverts h15; inverts* h13. *)
     *
     inverts mt as h4 h5.
     forwards* h6: IHVal1  h4.
@@ -368,7 +368,7 @@ Proof.
     inverts h7 as h7.
     destruct x; eauto.
     destruct x0; eauto.
-    forwards* h12: Cast_preservation h6.
+    (* forwards* h12: Cast_preservation h6.
     forwards* h13: Cast_preservation h7.
     forwards* h16: meet_more_precise h4.
     forwards* h17: meet_more_precise h5.
@@ -377,7 +377,7 @@ Proof.
     forwards* h14: Cast_prv_value h6.
     forwards* h15: Cast_prv_value h7.
     inverts h14; inverts h12.
-    inverts h15; inverts* h13.
+    inverts h15; inverts* h13. *)
 Qed.
   
 
@@ -445,6 +445,7 @@ Proof.
       rewrite h7 in h8.
       forwards* h3: Cast_progress h2.
       inverts* h3.
+      destruct x; eauto.
     + 
       rewrite sfill_anno. 
       destruct t'; eauto.

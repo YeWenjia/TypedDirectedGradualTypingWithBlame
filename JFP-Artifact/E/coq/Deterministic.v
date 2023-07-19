@@ -122,8 +122,8 @@ Proof.
 Qed.
 
 
-Lemma Cast_unique: forall p p1 p2 C A B,
-    pval p -> Typing nil p Chk C -> Cast p A B p1 -> Cast p A B p2 -> p1 = p2.
+Lemma Cast_unique: forall p p1 p2 C A,
+    pval p -> Typing nil p Chk C -> Cast p A p1 -> Cast p A p2 -> p1 = p2.
 Proof.
   introv pval Typ R1 R2.
   gen p2 C.
@@ -138,8 +138,8 @@ Proof.
     inverts Typ as h1 h2.
     inverts h1 as h3 h4.
     inverts pval as pval1 pval2.
-    forwards* h8: pattern_pro_uniq H H0.
-    inverts h8.
+    (* forwards* h8: pattern_pro_uniq H H0. *)
+    (* inverts h8. *)
     forwards* h5:IHR1_1 R2_1.
     forwards* h6:IHR1_2 R2_2.
     inverts h5. inverts* h6.
@@ -148,8 +148,8 @@ Proof.
     inverts Typ as h1 h2.
     inverts h1 as h3 h4.
     inverts pval as pval1 pval2.
-    forwards* h8: pattern_pro_uniq H H0.
-    inverts h8.
+    (* forwards* h8: pattern_pro_uniq H H0. *)
+    (* inverts h8. *)
     forwards* h5:IHR1_1 R2.
     inverts* h5.
     +
@@ -157,8 +157,8 @@ Proof.
     inverts Typ as h1 h2.
     inverts h1 as h3 h4.
     inverts pval as pval1 pval2.
-    forwards* h8: pattern_pro_uniq H H0.
-    inverts h8.
+    (* forwards* h8: pattern_pro_uniq H H0. *)
+    (* inverts h8. *)
     forwards* h5:IHR1_2 R2.
     inverts* h5.
   -
@@ -167,8 +167,8 @@ Proof.
      inverts Typ as h1 h2.
      inverts h1 as h3 h4.
      inverts pval as pval1 pval2.
-     forwards* h8: pattern_pro_uniq H H0.
-     inverts h8.
+     (* forwards* h8: pattern_pro_uniq H H0. *)
+     (* inverts h8. *)
      forwards* h5:IHR1 R2_1.
      inverts* h5.
   -
@@ -177,17 +177,30 @@ Proof.
      inverts Typ as h1 h2.
      inverts h1 as h3 h4.
      inverts pval as pval1 pval2.
-     forwards* h8: pattern_pro_uniq H H0.
-     inverts h8.
+     (* forwards* h8: pattern_pro_uniq H H0. *)
+     (* inverts h8. *)
      forwards* h5:IHR1 R2_2.
      inverts* h5.
 Qed.
 
 
 
+Lemma Cast_prv_pvalue: forall p A v',
+    pval p -> Cast p A (Expr v') -> tpre A (dynamic_type p) -> pval v'.
+Proof.
+  introv Val Red tp.
+  inductions Red;eauto; simpl in *;
+  try solve[inverts* Val].
+  -
+    inverts Val as val.
+    inverts* tp.
+  -
+    inverts* tp.
+    inverts Val as pval1 pval2.
+    forwards* h1: IHRed1.
+Qed.
 
-
-Lemma Cast_prv_value: forall p A B v',
+(* Lemma Cast_prv_value: forall p A B v',
     pval p -> Cast p A B (Expr v') -> tpre A (dynamic_type p) -> value v'.
 Proof.
   introv Val Red tp.
@@ -203,8 +216,27 @@ Proof.
     inverts* h1.
     forwards* h2: IHRed2.
     inverts* h2.
-Qed.
+Qed. *)
 
+
+Lemma Cast_prv_value: forall p A B v',
+    pval p -> Cast p A (Expr v') -> tpre A (dynamic_type p) ->
+   value (e_val v' B).
+Proof.
+  introv Val Red tp.
+  inductions Red;eauto; simpl in *;
+  try solve[inverts* Val].
+  -
+    inverts Val as val.
+    inverts* tp.
+  -
+    inverts* tp.
+    inverts Val as pval1 pval2.
+    forwards* h1: IHRed1.
+    inverts* h1.
+    forwards* h2: IHRed2.
+    inverts* h2.
+Qed.
 
 
 
@@ -403,15 +435,34 @@ Proof.
      forwards*: meet_unique H0 H7.
      subst.
      forwards*:  Cast_unique H H5.
+     congruence.
     +
       exfalso; apply H6; eauto.
       forwards*: meet_sim H0.
+    +
+     inverts Typ as h1. inverts h1 as h1.
+     inverts h1 as h1. inverts h1 as h1.
+     forwards*: meet_unique H0 H7.
+     subst.
+     forwards*:  Cast_unique H H5.
+     congruence.
   - (* annovp *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in *; inverts* H1;
     try solve[forwards*: step_not_value H3]].
     exfalso; apply H; eauto.
     forwards*: meet_sim H6.
+  -
+    (* annovp *)
+    inverts* Red2;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H2;
+    try solve[forwards*: step_not_value H4]].
+    inverts Typ as h1. inverts h1 as h1.
+     inverts h1 as h1. inverts h1 as h1.
+     forwards*: meet_unique H0 H7.
+     subst.
+     forwards*:  Cast_unique H H5.
+     congruence.
   - (* e_l v --> blame *)
      inverts* Red2;
     try solve[destruct E; unfold simpl_fill in H1; inverts* H1;

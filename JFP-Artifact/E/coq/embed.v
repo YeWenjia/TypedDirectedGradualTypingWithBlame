@@ -15,10 +15,10 @@ Fixpoint embed (e:nexp) (b: bool): exp :=
   | ne_var_b i => e_var_b i
   | ne_var_f x => e_var_f x
   | (ne_lit i5) => (e_anno (e_lit i5) t_dyn) 
-  | (ne_app e1 e2) => e_app (embed e1 b) (embed e2 false)
+  | (ne_app e1 e2) => e_app (embed e1 true) (embed e2 false)
   | (ne_abs e) => match b with
-                  | true => (e_anno (e_anno (e_abs (embed(e) false)) (t_arrow t_dyn t_dyn)) t_dyn)
-                  | false => (e_anno (e_abs (embed(e) false)) t_dyn)
+                  | true => (e_anno (e_abs (embed(e) false)) t_dyn)
+                  | false => (e_abs (embed(e) false))
                   end
   end.
 
@@ -56,7 +56,7 @@ Proof.
   -
   destruct b.
   +
-  assert(embed (ne_abs e1) true = (e_anno (e_anno (e_abs (embed e1 false)) (t_arrow t_dyn t_dyn)) t_dyn)).
+  assert(embed (ne_abs e1) true = (e_anno ((e_abs (embed e1 false)) ) t_dyn)).
   unfold embed; eauto.
   rewrite H.
   simpl; eauto.
@@ -64,7 +64,7 @@ Proof.
   forwards*: IHn e1 x (S m). omega.
   rewrite H0; eauto.
   +
-  assert(embed (ne_abs e1) false = (e_anno (e_abs (embed e1 false)) t_dyn)).
+  assert(embed (ne_abs e1) false = (e_abs (embed e1 false))).
   unfold embed; eauto.
   rewrite H.
   simpl; eauto.
@@ -86,32 +86,43 @@ Proof.
   eapply embed_open_gen; eauto.
 Qed.
 
+
+
+Definition dynamic_typing_aux G e b  := 
+   match b with 
+    | true => Typing G (embed e b) Inf t_dyn 
+    | _   => Typing G (embed e b) Chk t_dyn 
+   end.
+
 Lemma dynamic_typing: forall G e b,
  well_formed G e ->
- Typing G (embed e b) Inf t_dyn.
+ dynamic_typing_aux G e b.
 Proof.
     introv wl. gen b.
-    inductions wl; intros;simpl in *; eauto.
-    destruct b; simpl; eauto.
+    inductions wl; intros;simpl in *; eauto;unfold dynamic_typing_aux in *;
+    destruct b; simpl in *; eauto.
     -
     apply Typ_anno; eauto.
-    eapply Typ_sim with (A := (t_arrow t_dyn t_dyn));eauto.
-    apply Typ_anno; auto.
     pick fresh x and apply Typ_abs; auto.
-    forwards*: H0 x.
+    apply pa_dyn.
+    forwards* h1: H0 x false.
     unfold open_exp_wrt_exp in *.
     unfold open_nexp_wrt_nexp in *.
-    rewrite <- embed_open.
-    eapply Typ_sim; eauto.
+    rewrite <- embed_open; auto.
     -
-    apply Typ_anno; auto.
     pick fresh x and apply Typ_abs; eauto.
-    forwards*: H0 x.
+    forwards*: H0 x false.
     unfold open_exp_wrt_exp in *.
     unfold open_nexp_wrt_nexp in *.
-    rewrite <- embed_open.
-    eapply Typ_sim; eauto.
+    rewrite <- embed_open;auto.
+    -
+      forwards* h1: IHwl1 true.
+      forwards* h2: IHwl2 false.
+    -
+      forwards* h1: IHwl1 true.
+      forwards* h2: IHwl2 false.
 Qed.
+
 
 
 
