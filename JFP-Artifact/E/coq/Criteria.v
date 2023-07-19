@@ -715,7 +715,7 @@ Proof.
       forwards* h2: val_prel ep2.
       inverts ep1 as h3.
       exists. split.
-      eapply Step_nbeta; eauto.
+      eapply Step_beta; eauto.
       pick fresh xx.
       assert((e0 ^^ e2') = [xx ~> e2'] (e0 ^ xx)).
       rewrite (subst_exp_intro xx); eauto.
@@ -735,7 +735,7 @@ Proof.
      lets(tt1&h10&h11):h9.
      inverts h11; try solve[inverts h10].
      exists. splits.
-     eapply Step_beta; eauto.
+     eapply Step_app; eauto.
      eapply ep_anno; eauto.
      eapply ep_anno; eauto.
      eapply ep_anno; eauto.

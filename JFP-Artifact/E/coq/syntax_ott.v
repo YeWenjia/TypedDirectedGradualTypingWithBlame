@@ -380,11 +380,11 @@ Inductive step : exp -> res -> Prop :=
     simpl_wf E ->
     step e1 Blame ->
     step (simpl_fill E e1) Blame
-  | Step_nbeta : forall (e:exp) v,
+  | Step_beta : forall (e:exp) v,
     lc_exp (e_abs e) ->
      value v ->
      step (e_app (e_abs e) v)  (Expr (open_exp_wrt_exp  e v ))
-  | Step_beta : forall A  B D D1 D2 C1 C2 (e:exp) e2,
+  | Step_app : forall A  B D D1 D2 C1 C2 (e:exp) e2,
      lc_exp (e_abs e) ->
      pattern D (t_arrow D1 D2) ->
      step (e_app (e_val (e_anno (e_anno (e_abs e) (t_arrow A B)) (t_arrow C1 C2)) D) e2) 
