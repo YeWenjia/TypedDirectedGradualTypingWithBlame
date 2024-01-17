@@ -25,29 +25,44 @@ Proof.
   inverts* H].
 Qed.
 
+
+Lemma Cast_simp_prv: forall v v' A l b,
+  value v ->
+  Cast v l b A (e_exp v') ->
+  dynamic_type v' = A.
+Proof.
+  introv val red.
+  inductions red; simpl in *; eauto;
+  try solve[inverts* val].
+  -
+  inverts* val.
+  forwards* h1: IHred1.
+  forwards* h2: IHred2.
+  substs*.
+Qed.
+
+Lemma ug_ground_r: forall t1 t2,
+ UG t1 t2 ->
+ Ground t2.
+Proof.
+ introv h1.
+ inverts* h1.
+Qed.
+
+
 Lemma Cast_Value: forall v v'  p b A,
   value v->
   Cast v p b A (e_exp v') ->
   value v'.
 Proof.
   introv Val Red.
-  inductions Red; eauto.
-  - apply value_dyn; eauto.
-    inverts H.
-    inverts H1.
-    inverts Val; inverts* H2; try solve[
-      eapply value_fanno; eauto;
-    reflexivity
-    ].
-  - inverts Val.
-    inverts H.
-    inverts H2.
-    inverts* H4.
-    inverts* H0.
-    rewrite <- H4 in *.
-    inverts H3.
+  inductions Red;
+  try solve[inverts* Val]; eauto.
   -
-    invert* Val.
+    forwards* h1: IHRed.
+    forwards* h2: Cast_simp_prv Red.
+    forwards*: ug_ground_r H.
+    rewrite <- h2 in *; auto.
 Qed.
 
 
@@ -62,10 +77,23 @@ Proof with auto.
   lets Lc : Typing_regular_1 Typ;
   try solve [constructor*];
   try solve [inverts* Typ].
-  forwards*: principle_inf Typ.
-  rewrite H1 in H0.
-  rewrite H0.
-  auto.
+  -
+    forwards*: principle_inf Typ.
+    rewrite H1 in H0.
+    rewrite H0.
+    auto.
+  -
+    inverts Typ as h1 h2.
+    inverts Val as h3 h4.
+    forwards*: IHRed1 Red1.
+  -
+    inverts Typ as h1 h2.
+    inverts Val as h3 h4.
+    forwards* h5: IHRed1 Red1.
+  -
+    inverts Typ as h1 h2.
+    inverts Val as h3 h4.
+    forwards* h5: IHRed1 Red1.
 Qed.
 
 
@@ -79,25 +107,32 @@ Proof with auto.
   lets Lc : Typing_regular_1 Typ;
   try solve [constructor*];
   try solve [inverts* Typ].
-  - 
-    inverts Typ. inverts* H0.
   -
-    inverts Typ.
-    forwards* h1: principle_inf H0.
-    rewrite h1 in *.
-    inverts* H.
+    inverts Typ. inverts* H0.
   - 
-    inverts* Typ. inverts H1. inverts* H9.
-    inverts Val.  
-    forwards* h1: principle_inf H1.
-    rewrite h1 in *.
-    inverts* H6; inverts* H0;inverts* H.
+    inverts Typ as typ.
+    forwards* h2: Cast_sim Red.
+    forwards* h1: principle_inf typ.
+    rewrite h1 in *; auto.
+    forwards*: IHRed.
+  -
+   inverts Typ as typ. 
+   inverts typ as typ.
+   inverts typ as typ.
+   inverts Val.
+   forwards* h1: Cast_sim Red.
+  -
+    inverts Typ as typ. inverts typ as typ.
+    inverts typ as typ.
+    inverts Val.
+    forwards* h1: principle_inf typ.
+    rewrite h1 in *; auto.
   -
     inverts Val.
-    inverts Typ. inverts H. inverts H9.
-    forwards* h1: principle_inf H.
-    rewrite h1 in *.
-    auto.
+    inverts Typ as typ typ3. 
+    inverts typ as typ1 typ2.
+    inverts* typ3.
+    forwards* h1:  IHRed1.
 Qed.
 
 
@@ -150,6 +185,26 @@ Proof.
       inverts H0.
       forwards*: IHRed H6.
       forwards*: IHRed H6.
+      +
+      inverts Typ as typ.
+      inverts typ as typ1 typ2.
+      forwards*: IHRed typ1.
+      forwards*: IHRed typ.
+    +
+      inverts Typ as typ typ0.
+      inverts typ as typ1 typ2.
+      forwards*: IHRed typ2.
+      forwards*: IHRed typ0.
+    +
+      inverts Typ as typ.
+      inverts typ as typ.
+      forwards*: IHRed typ.
+      forwards*: IHRed typ.
+    +
+      inverts Typ as typ.
+      inverts typ as typ.
+      forwards*: IHRed typ.
+      forwards*: IHRed typ.
   - (* beta *)
     inverts Typ.
     + inverts* H1. inverts H6. 
@@ -216,6 +271,42 @@ Proof.
     inverts H. inverts* H4.
     +
     inverts* H2.
+    -
+    inverts Typ as typ typ0.
+    +
+    inverts typ as typ typ1.
+    inverts typ as typ.
+    inverts* typ1.
+    eapply Typ_sim;eauto.
+    +
+    inverts typ as typ1 typ2.
+    inverts typ0 as typ0; eauto.
+  -
+     inverts Typ as typ typ0.
+    +
+    inverts typ as typ typ1.
+    inverts typ as typ.
+    inverts* typ1.
+    eapply Typ_sim;eauto.
+    +
+    inverts typ as typ1 typ2.
+    inverts typ0 as typ0; eauto.
+  -
+    inverts Typ as typ1 typ2.
+    +
+    inverts typ1 as typ1 typ3.
+    inverts  typ1; inverts* typ3.
+    +
+    inverts typ1 as typ4 typ5.
+    inverts*  typ2.
+  -
+    inverts Typ as typ1 typ2.
+    +
+    inverts typ1 as typ1 typ3.
+    inverts  typ1; inverts* typ3.
+    +
+    inverts typ1 as typ4 typ5.
+    inverts*  typ2.
 Qed. 
 
 
@@ -246,41 +337,34 @@ Qed.
 
 
 Lemma sim_decidable:forall A B,
-  sim A B \/ ~ (sim A B).
+sim A B \/ ~ (sim A B).
 Proof.
   introv.
   gen A.
-  inductions B; intros; eauto.
-  - inductions A; eauto.
-    right.
-    unfold not; 
-    intros.
-    inverts* H.
-  - inductions A; eauto.
-    right.
-    unfold not; 
-    intros.
-    inverts* H.
-    forwards*: IHB1 A1.
-    forwards*: IHB2 A2.
-    destruct H.
-    destruct H0.
-    left.
-    apply BA_AB in H.
-    eauto.
-    right.
-    unfold not; 
-    intros.
-    inverts* H1.
-    destruct H0.
-    right.
-    unfold not; 
-    intros.
-    inverts* H1.
-    right.
-    unfold not; 
-    intros.
-    inverts* H1.
+  inductions B; intros; eauto;
+  try solve[inductions A; eauto;
+  try solve[right; unfold not;intros nt;inverts nt]].
+  - inductions A; eauto;
+    try solve[right; unfold not;intros nt;inverts nt].
+    forwards* h1: IHB1 A1.
+    forwards* h2: IHB2 A2.
+    inverts h1 as h1; try solve[
+      right; unfold not;intros nt;inverts* nt
+    ].
+    inverts h2 as h2; try solve[
+      right; unfold not;intros nt;inverts* nt
+    ]; eauto.
+  - 
+  inductions A; eauto;
+    try solve[right; unfold not;intros nt;inverts nt].
+    forwards* h1: IHB1 A1.
+    forwards* h2: IHB2 A2.
+    inverts h1 as h1; try solve[
+      right; unfold not;intros nt;inverts* nt
+    ].
+    inverts h2 as h2; try solve[
+      right; unfold not;intros nt;inverts* nt
+    ]; eauto.
 Qed.
 
 
@@ -297,12 +381,8 @@ Proof.
   inverts* typ; simpl in *; subst.
   inverts* red; try solve[inverts H4].
  -
-  inverts* red; simpl in *; inverts* H1.
-  +
-  rewrite <- H2 in *. inverts* H. inverts* H1.
-  inverts* H3.
-  +
-  rewrite <- H2 in *. inverts* H. 
+  inverts* red; simpl in *; try solve[inverts H1].
+  forwards*: UG_not_ground H.
 Qed.
 
 
@@ -315,9 +395,160 @@ Proof.
   inverts* val; simpl in *.
   -
   inverts* red; try solve[inverts H4].
+ -
+  inverts* red; simpl in *; try solve[inverts H1].
+  forwards*: UG_not_ground H.
+Qed.
+
+
+
+
+Lemma Ground_decidable : forall A,
+  Ground A \/ not (Ground A).
+Proof.
+  introv.
+  inductions A; intros; eauto;
+  try solve[right; unfold not;intros nt;inverts nt].
   -
-  inverts* red; try solve[inverts H1].
-  forwards*: flike_not_ground H.
+  destruct(eq_type A1); destruct(eq_type A2); try solve[substs*];
+  try solve[right; unfold not;intros nt;inverts nt; apply H0; auto];
+  try solve[right; unfold not;intros nt;inverts nt; apply H; auto].
+  -
+  destruct(eq_type A1); destruct(eq_type A2); try solve[substs*];
+  try solve[right; unfold not;intros nt;inverts nt; apply H0; auto];
+  try solve[right; unfold not;intros nt;inverts nt; apply H; auto].
+Qed.
+  
+
+
+Lemma UG_arrow: forall t1 t2,
+ ~ Ground (t_arrow t1 t2) ->
+ UG (t_arrow t1 t2) (t_arrow t_dyn t_dyn).
+Proof.
+  introv h1.
+  unfold UG; try solve[unfold not; intros nt;inverts nt];
+  splits*; try solve[unfold not; intros nt;inverts nt];
+  try solve[unfold not; intros nt;inverts nt; apply h1; auto].
+Qed.
+
+
+Lemma UG_pro: forall t1 t2,
+ ~ Ground (t_pro t1 t2) ->
+ UG (t_pro t1 t2) (t_pro t_dyn t_dyn).
+Proof.
+  introv h1.
+  unfold UG; try solve[unfold not; intros nt;inverts nt];
+  splits*; try solve[unfold not; intros nt;inverts nt];
+  try solve[unfold not; intros nt;inverts nt; apply h1; auto].
+Qed.
+
+Lemma UG_decidable: forall A,
+ (exists B, UG A B) \/ (forall B, not(UG A B)).
+Proof.
+  introv.
+  inductions A.
+  -
+    right.
+    intros.
+    unfold not; intros nt.
+    inverts nt as nt1 nt2.
+    inverts nt2 as nt2 nt3.
+    inverts nt3 as nt3 nt4.
+    inverts* nt1.
+    inverts nt2.
+  -
+    forwards* h1: Ground_decidable (t_arrow A1 A2).
+    inverts h1 as h1.
+    inverts h1.
+    +
+    right.
+    intros.
+    unfold not;intros nt.
+    inverts nt as nt1 nt2.
+    inverts nt2 as nt2 nt3.
+    inverts nt3 as nt3 nt4.
+    inverts nt1;inverts nt2.
+    exfalso; apply nt3; auto.
+    +
+    forwards*: UG_arrow h1.
+  -
+    right.
+    intros.
+    unfold not;intros nt.
+    inverts nt as nt1 nt2.
+    inverts nt2 as nt2 nt3.
+    inverts nt3 as nt3 nt4.
+    exfalso; apply nt4; auto.
+  -
+    forwards* h1: Ground_decidable (t_pro A1 A2).
+    inverts h1 as h1.
+    inverts h1.
+    +
+    right.
+    intros.
+    unfold not;intros nt.
+    inverts nt as nt1 nt2.
+    inverts nt2 as nt2 nt3.
+    inverts nt3 as nt3 nt4.
+    inverts nt1;inverts nt2.
+    exfalso; apply nt3; auto.
+    +
+    forwards*: UG_pro h1.
+Qed.
+
+
+
+Lemma cast_dyn_not_fail: forall v r l b,
+    value v -> 
+    Cast v l b t_dyn r ->
+    exists v', r = (e_exp v') .
+Proof.
+   introv val red.
+   inductions red; try solve[unfold not; intros nt;inverts nt];
+   try solve[inverts* val];eauto;
+   try solve[exfalso; apply H; auto].
+Qed.
+
+
+Lemma Ground_sim_case: forall A B,
+  Ground A ->
+  sim A B ->
+  B = A \/ B = t_dyn \/ UG B A.
+Proof.
+  introv gr ss.
+  inverts* gr; try solve[inverts* ss].
+  -
+    forwards* h1: Ground_decidable B.
+    inverts h1 as h1.
+    +
+    inverts h1; 
+    inverts* ss.
+    +
+    inverts* ss.
+    forwards*: UG_arrow h1.
+  -
+    forwards* h1: Ground_decidable B.
+    inverts h1 as h1.
+    +
+    inverts h1; 
+    inverts* ss.
+    +
+    inverts* ss.
+    forwards*: UG_pro h1.
+Qed.
+
+
+
+
+Lemma cast_label: forall v A l b l2 b2,
+    value v -> 
+    Cast v l b A (e_blame l2 b2) ->
+    l = l2 /\ b = b2.
+Proof.
+   introv val red.
+   inductions red; try solve[unfold not; intros nt;inverts nt];
+   try solve[inverts* val];eauto;
+   try solve[exfalso; apply H; auto].
 Qed.
 
 Lemma Cast_progress: forall v p b A,
@@ -325,176 +556,139 @@ Lemma Cast_progress: forall v p b A,
 Proof.
   introv Val Typ. gen A.
   inductions Val; intros. 
-  - inverts Typ.
-    inverts H.
-    inductions A; inverts H0; eauto.
-  - inverts Typ.
-    inverts H0.
-    inductions A; inverts H1; eauto.
-    destruct (eq_type t1).
-    destruct (eq_type t2).
-    +
-    subst*.
-    +
-    exists.
-    apply Cast_anyd; eauto.
-    simpl.
-    unfold FLike.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
-    split.
-    unfold not; intros nt;
-    inverts* nt.
-    eauto.
-    +
-    exists.
-    apply Cast_anyd; eauto.
-    simpl.
-    unfold FLike.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
-    split.
-    unfold not; intros nt;
-    inverts* nt.
-    eauto.
   - 
-    inverts Typ.
-    inverts H0.
-    inverts H8;try solve[forwards*:abs_nlam].
-    inductions A0; eauto; try solve[inverts H1].
-    destruct (eq_type A).
-    destruct (eq_type B).
+    inverts Typ as typ1 typ2.
+    inverts typ1; inverts* typ2.
+  - 
+    inverts Typ as typ1 typ2.
+    inverts typ1; inverts* typ2.
+    forwards* h1: UG_decidable (t_arrow t1 t2).
+    inverts h1 as h1.
     +
-    subst.
-    exists.
-    apply Cast_v; eauto.
-    +
-    exists.
-    apply Cast_anyd; eauto.
-    unfold FLike.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
+      inverts h1 as h1.
+      lets h1': h1.
+      inverts h1 as h1 h2.
+      inverts h2 as h2 h3.
+      inverts h1; inverts h2.
+      assert(Cast (e_abs t1 e l b0 t2) p b (t_arrow t_dyn t_dyn) (e_exp (e_anno (e_abs t1 e l b0 t2) p b (t_arrow t_dyn t_dyn))) ) as h1.
+    assert(dynamic_type (e_abs t1 e l b0 t2) = (t_arrow t1 t2)); simpl; auto.
     eauto.
-    simpl. eauto.
+    exists*.
     +
-    exists.
-    apply Cast_anyd; eauto.
-    unfold FLike.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
-    split.
-    unfold not; intros nt.
-    inverts* nt.
+    forwards* h2: Ground_decidable (t_arrow t1 t2).
+    inverts h2 as h2; eauto.
+    forwards* h3: h1  (t_arrow t_dyn t_dyn).
+    forwards*: UG_arrow h2.
+  -
+    inverts Typ as typ1 typ2.
+    inverts typ1 as typ1.
+    inverts* typ2.
+    forwards* h1: UG_decidable (t_arrow A B).
+   inverts h1 as h1.
+   +
+     inverts h1 as h1.
+     lets h1': h1.
+     inverts h1 as h1 h2.
+     inverts h2 as h2 h3.
+     inverts h1; inverts h2.
+     assert(Cast (e_anno v p0 b0 (t_arrow A B)) p b (t_arrow t_dyn t_dyn) (e_exp (e_anno (e_anno v p0 b0 (t_arrow A B)) p b (t_arrow t_dyn t_dyn))) ) as h1.
+   assert(dynamic_type (e_anno v p0 b0 (t_arrow A B)) = ( (t_arrow A B))); simpl; auto.
+   eauto.
+   exists*.
+   +
+   forwards* h2: Ground_decidable ( (t_arrow A B)).
+   inverts h2 as h2; eauto.
+   forwards* h3: h1  (t_arrow t_dyn t_dyn).
+   forwards*: UG_arrow h2.
+  -
+    destruct(sim_decidable (dynamic_type v) A); eauto.
+    inverts Typ as typ1 typ2.
+    inverts typ1 as typ1.
+    inverts typ1 as typ1.
+    forwards* h1: principle_inf typ1.
+    rewrite h1 in *.
+    forwards* h2: IHVal A.
+    inverts* h2.
+    forwards* h3: UG_decidable A.
+    inverts h3 as h3.
+    +
+      inverts* h3.
+    +
+      forwards* h4: Ground_sim_case H0.
+      inverts h4 as h4 h5.
+      --
+      rewrite <- h1 in *; exists*.
+      --
+      inverts h4 as h4 h5.
+      forwards*: value_lc Val.
+      forwards* : h3 A0.
+  - 
+    inverts Typ as typ1 typ2.
+    inverts typ1; inverts* typ2.
+    assert(UG (dynamic_type e_add) (t_arrow t_dyn t_dyn)) as h0.
+    unfold UG; simpl; repeat split*;
+    try solve[
+    unfold not;intros nt;inverts nt].
+    assert(Cast e_add p b (t_arrow t_dyn t_dyn) (e_exp (e_anno e_add p b (t_arrow t_dyn t_dyn))) ) as h1.
+    assert(dynamic_type e_add = (t_arrow t_int (t_arrow t_int t_int))); simpl; auto.
     eauto.
-    simpl. eauto.
+    exists*.
+  - 
+    inverts Typ as typ1 typ2.
+    inverts typ1; inverts* typ2.
+    assert(UG (dynamic_type (e_addl i5)) (t_arrow t_dyn t_dyn)) as h0.
+    unfold UG; simpl; repeat split*;
+    try solve[
+    unfold not;intros nt;inverts nt].
+    assert(Cast (e_addl i5) p b (t_arrow t_dyn t_dyn) (e_exp (e_anno (e_addl i5) p b (t_arrow t_dyn t_dyn))) ) as h1.
+    assert(dynamic_type (e_addl i5) = (t_arrow t_int t_int)); simpl; auto.
+    eauto.
+    exists*.
   -
-    inverts Val; simpl in *;inverts H.
+    inverts Typ as typ1 typ2.
+    inverts typ1 as typ1 typ3.
+    inverts* typ2.
     +
-      inductions A; eauto.
+      forwards* h1: UG_decidable (dynamic_type (e_pro v1 v2)).
+      inverts h1 as h1.
       *
-      exists.
-      apply Cast_vany; eauto.
+        inverts h1 as h1.
+        lets h1': h1.
+        inverts h1 as h1 h2.
+        inverts h2 as h2 h3.
+        inverts h1; inverts h2.
+        forwards* h1: IHVal1 t_dyn.
+        forwards* h2: IHVal2 t_dyn.
+        inverts h1 as h1.
+        inverts h2 as h2.
+        assert(exists v, Cast (e_pro v1 v2) p b (t_pro t_dyn t_dyn) (e_exp v)) as h4.
+        forwards* h5: cast_dyn_not_fail h1.
+        inverts h5 as h5.
+        forwards* h6: cast_dyn_not_fail h2.
+        inverts h6 as h6.
+        exists*.
+        inverts h4 as h4.
+        exists*.
       *
-      exists.
-      apply Cast_blame.
-      unfold not; intros nt;inverts nt.
+        forwards* h2: Ground_decidable (t_pro (dynamic_type v1) (dynamic_type v2)).
+        inverts h2 as h2; eauto.
+        forwards* h3: h1  (t_pro t_dyn t_dyn).
+        forwards*: UG_pro h2.
     +
-      inductions A; eauto.
-      *
-      exists.
-      apply Cast_blame.
-      unfold not; intros nt;inverts nt.
-      *
-      destruct (eq_type A1).
-      destruct (eq_type A2).
-      --
-      subst.
-      exists.
-      apply Cast_vany; eauto.
-      --
-      exists.
-      apply Cast_dyna; simpl in *;eauto.
-      unfold FLike.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      eauto.
-      --
-      exists.
-      apply Cast_dyna; simpl in *;eauto.
-      unfold FLike.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      eauto.
-    +
-      inductions A; eauto.
-      *
-      exists.
-      apply Cast_blame.
-      unfold not; intros nt;inverts nt.
-      *
-      destruct (eq_type A1).
-      destruct (eq_type A2).
-      --
-      subst.
-      exists.
-      apply Cast_vany; eauto.
-      --
-      exists.
-      apply Cast_dyna; simpl in *;eauto.
-      unfold FLike.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      eauto.
-      --
-      exists.
-      apply Cast_dyna; simpl in *;eauto.
-      unfold FLike.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      split.
-      unfold not; intros nt.
-      inverts* nt.
-      eauto.
-  -
-    inverts Typ. inverts H. inverts H0.
-    +
-     exists. apply Cast_abs with (C := t_int) (D := t_arrow t_int t_int); eauto.
-    +
-    exists.
-    eapply Cast_anyd; eauto.
-    simpl; unfold FLike. splits*.
-    unfold not; intros nt;inverts nt.
-    unfold not; intros nt;inverts nt.
-  -
-     inverts Typ. inverts H. inverts H0.
-     +
-     exists. apply Cast_abs with (C := t_int) (D := t_int); eauto.
-     +
-     exists.
-     eapply Cast_anyd; eauto.
-     simpl; unfold FLike. splits*.
-     unfold not; intros nt;inverts nt.
-     unfold not; intros nt;inverts nt.
+    forwards* h1: IHVal1.
+    forwards* h2: IHVal2.
+    inverts h1 as h1.
+    inverts h2 as h2.
+    destruct x;destruct x0; eauto.
+    *
+      forwards* h3: cast_label h2.
+      inverts h3 as h3; eauto.
+    *
+      forwards* h3: cast_label h1.
+      inverts h3 as h3; eauto.
+    *
+      forwards* h3: cast_label h1.
+      inverts h3 as h3; eauto.
 Qed.
 
 
@@ -554,7 +748,8 @@ Proof.
   introv lc.
   inductions lc; try solve[right; unfold not; intros nt; inverts* nt];
   try solve[left*].
-  inverts IHlc.
+  inverts IHlc;
+  try solve[right; unfold not; intros nt; inverts* nt].
   - inductions H; try solve[right; unfold not; intros nt; inverts* nt];
    try solve[left*].
    + inductions A;try solve[right; unfold not; intros nt; inverts* nt];
@@ -593,7 +788,24 @@ Proof.
     left. eapply value_fanno; eauto. reflexivity.
     right; unfold not; intros nt; inverts* nt; try solve[inverts* H6];
     try solve[inverts H1].
-  - inductions lc; try solve[exfalso; apply H; auto];
+    +
+    inductions A;try solve[right; unfold not; intros nt; inverts* nt];
+    try solve[left*].
+    *
+      right; unfold not; intros nt; inverts nt as h0 h1.
+      inverts h1.
+    *
+      destruct(dyn_decidable (dynamic_type v1));destruct(dyn_decidable (dynamic_type v2));substs*;
+      try solve[right; unfold not; intros nt; inverts nt as nt; inverts* nt];
+      try solve[right; unfold not; intros nt; inverts* nt; inverts* H3];
+      try solve[left*].
+      assert(Ground (t_pro (dynamic_type v1) (dynamic_type v2))).
+      rewrite H1; rewrite H2; auto.
+      left*.
+  - inverts IHlc1;try solve[exfalso; apply H; auto];
+    try solve[right; unfold not; intros nt; inverts* nt];
+    try solve[left*].
+    inverts IHlc2;try solve[exfalso; apply H; auto];
     try solve[right; unfold not; intros nt; inverts* nt];
     try solve[left*].
 Qed.
@@ -615,25 +827,27 @@ Proof.
     lets* [Val1 | [e1' Red1]]: IHTyp1.
     lets* [Val2 | [e2' Red2]]: IHTyp2.
     +
-    inverts H.
-    forwards*: principle_inf Typ1.
-    forwards*: Cast_progress l b Typ2.
-    inverts H0.
-    inductions x; try solve[inverts* H1].
-    inverts Val1; inverts* Typ1.
+      inverts* H.
+      forwards*: principle_inf Typ1.
+      forwards* h1: Cast_progress l b Typ2.
+      inverts h1 as h1.
+      destruct x; try solve[inverts* H1]; try solve[exists*].
+      forwards* h2: cast_label h1.
+      inverts* h2.
+      inverts Val1; inverts* Typ1.
     + 
-    inverts H.
-    *
-    forwards*: principle_inf Typ1. 
-    inductions e2'.
-    assert(fill ((appCtxR e1 l b )) e2 = e_app e1 l b e2); eauto.
-    rewrite <- H0.
-    exists. apply Step_eval; eauto.
-    assert(fill ((appCtxR e1  l b )) e2 = e_app e1 l b e2); eauto.
-    rewrite <- H0.
-    exists. apply Step_blame; eauto.
-    *
-    inverts Val1;inverts* Typ1.
+      inverts H.
+      *
+      forwards*: principle_inf Typ1. 
+      inductions e2'.
+      assert(fill ((appCtxR e1 l b )) e2 = e_app e1 l b e2); eauto.
+      rewrite <- H0.
+      exists. apply Step_eval; eauto.
+      assert(fill ((appCtxR e1  l b )) e2 = e_app e1 l b e2); eauto.
+      rewrite <- H0.
+      exists. apply Step_blame; eauto.
+      *
+      inverts Val1;inverts* Typ1.
   + 
     inductions e1'.
     assert(fill ((appCtxL e2 l b )) e1 = e_app e1 l b e2); eauto.
@@ -682,6 +896,56 @@ Proof.
     assert(fill ((appvCtxL e2 )) e1 = e_appv e1 e2); eauto.
     rewrite <- H.
     exists. apply Step_blame; eauto.
+    -
+    inverts Lc.
+    lets* [Val1 | [e1' Red1]]: IHTyp1.
+    lets* [Val2 | [e2' Red2]]: IHTyp2.
+    + 
+      destruct e2'.
+      assert(fill ((proCtxR e1)) e2 = e_pro e1 e2) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+      assert(fill ((proCtxR e1)) e2 = e_pro e1 e2) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+    +
+      destruct e1'.
+      assert(fill ((proCtxL e2)) e1 = e_pro e1 e2) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+      assert(fill ((proCtxL e2)) e1 = e_pro e1 e2) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+  -
+    inverts Lc.
+    lets* [Val | [e' Red]]: IHTyp.
+    +
+      inverts H.
+      inverts* Val;inverts Typ.
+      inverts* Val; inverts Typ.
+    +
+      destruct e'.
+      assert(fill ((lCtx l b)) e = e_l e l b) as h1; eauto.
+      rewrite <- h1. 
+      right. exists*. 
+      assert(fill ((lCtx l b)) e = e_l e l b) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+  -
+    inverts Lc.
+    lets* [Val | [e' Red]]: IHTyp.
+    +
+      inverts H.
+      inverts* Val;inverts Typ.
+      inverts* Val; inverts Typ.
+    +
+       destruct e'.
+      assert(fill ((rCtx l b)) e = e_r e l b) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
+      assert(fill ((rCtx l b)) e = e_r e l b) as h1; eauto.
+      rewrite <- h1.
+      right. exists*. 
 Qed.
 
 
@@ -713,7 +977,7 @@ Qed.
 
 Lemma pty_pty: forall v1 A dir v2,
  atyping nil v1 dir A v2 ->
- principal_type v1 =  principal_type v2.
+ dynamic_type v1 =  dynamic_type v2.
 Proof.
   introv typ.
   inductions typ;eauto.
@@ -744,15 +1008,34 @@ Proof.
 Qed.
 
 
-Lemma Cast_equal: forall v1 v2 v1' v2' l b A,
+Lemma UG_to_sim: forall A B,
+  UG A B ->
+  sim A B.
+Proof.
+  introv h1.
+  inverts h1 as h11 h12; auto.
+Qed.
+
+
+Lemma UG_to_ndyn: forall A B,
+  UG A B ->
+  not(A = t_dyn).
+Proof.
+  introv h1.
+  inverts h1 as h11 h12; auto.
+Qed.
+
+
+
+Lemma Cast_equal: forall v1 v2 v1' v2' l b A B,
  value v1 ->
- atyping nil v1 Chk A v2 ->
+ atyping nil v1 Chk B v2 ->
  Cast v1 l b A (e_exp v1') ->
  Cast v2 l b A (e_exp v2') ->
  atyping nil v1' Inf A v2'.
 Proof.
-  introv val typ red1 red2. 
-  inductions red1; intros;eauto;
+  introv val typ red1 red2.  gen v2 v2' B. 
+  inductions red1; intros;eauto; 
   try solve[inverts* typ;inverts* H;inverts* red2].
   -
     inverts typ; try solve[forwards*: abs_nlam];
@@ -771,12 +1054,12 @@ Proof.
     rewrite <- h1 in *.
     forwards* h3: atyping_inf2 H0.
     rewrite <- h3 in *.
-    forwards*: flike_not_ground H6.
+    forwards*: UG_not_ground H3.
   -
     inverts typ. inverts* H0.
     lets red2': red2.
-    inverts* red2; simpl in *; try solve[inverts* H5];
-    try solve[inverts* H7]; try solve[inverts* H9].
+    inverts* red2; simpl in *; try solve[inverts* H2];
+    try solve[inverts* H5]; try solve[inverts* H8].
     inverts H9.
     inverts val.
     forwards* h2: value_value H0.
@@ -792,21 +1075,20 @@ Proof.
     rewrite h3 in *.
     rewrite <- h1 in *.
     inverts* red2; simpl in *; try solve[inverts* H].
-    forwards*: flike_not_ground H.
+    forwards*: UG_not_ground H.
+    forwards* h4: UG_uniq H H3.
+    substs*.
   -
     forwards* h2: value_value typ.
-    inverts typ. inverts* H1.
-    inverts* H10.
-    inverts* red2; simpl in *; try solve[inverts* H10];
+    inverts typ as typ1 typ2. inverts typ1 as typ1.
+    inverts* red2; simpl in *; try solve[inverts* H6];
     try solve[inverts* H].
     +
-    inverts h2.
-    forwards* h3: atyping_inf2 H1.
-    rewrite h3 in *.
-    eapply atyp_anno;eauto.
+    inverts val.
+    forwards*: IHred1.
     +
     inverts h2.
-    forwards*: flike_not_ground H.
+    forwards*: UG_not_ground H.
   -
     forwards* h2: value_value typ.
     inverts typ. inverts* H.
@@ -820,7 +1102,7 @@ Proof.
     +
     rewrite <- H10 in *. inverts H4.
     +
-    forwards*: flike_not_ground H10.
+    forwards*: UG_not_ground H11.
     +
     rewrite H10 in *. 
     rewrite h3 in *. auto.
@@ -845,43 +1127,55 @@ Proof.
 Qed.
 
 
-Lemma CCast_blame: forall v1 v2 l b A,
+Lemma CCast_blame: forall v1 v2 l b A B,
  value v1 ->
- atyping nil v1 Chk A v2 ->
+ atyping nil v1 Chk B v2 ->
  Cast v1 l b A (e_blame l b) ->
  Cast v2 l b A (e_blame l b).
 Proof.
-  introv val typ red. 
+  introv val typ red. gen B v2.
   inductions red; intros;eauto;
   try solve[inverts* typ;inverts* H;inverts* red2].
-  forwards*: value_value typ.
-  inverts* typ. inverts H1.
-  inverts* H10.
-  inverts val. inverts H0.
-  forwards* h1: atyping_inf H1.
-  forwards* h2: atyping_inf2 H1.
-  rewrite <- h1 in *.
-  rewrite <- h2 in *; eauto.
+  -
+    forwards*: value_value typ.
+    inverts typ as typ1. inverts typ1 as typ1.
+    inverts* val.
+  -
+    inverts val. inverts typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    forwards*: value_value typ.
+    forwards* h1: atyping_inf typ.
+    forwards* h2: atyping_inf2 typ.
+    rewrite <- h1 in *.
+    rewrite <- h2 in *; eauto.
 Qed.
 
 
-Lemma Cast_blame2: forall v1 v2 l b A,
+Lemma Cast_blame2: forall v1 v2 l b A B,
  value v1 ->
- atyping nil v1 Chk A v2 ->
+ atyping nil v1 Chk B v2 ->
  Cast v2 l b A (e_blame l b) ->
  Cast v1 l b A (e_blame l b).
 Proof.
-  introv val typ red. 
+  introv val typ red. gen B v1.
   inductions red; intros;eauto;
   try solve[inverts* typ;inverts* H;inverts* red2].
-  forwards*: value_value typ.
-  inverts* typ. inverts H1.
-  inverts* H8.
-  inverts val. inverts H0.
-  forwards* h1: atyping_inf H1.
-  forwards* h2: atyping_inf2 H1.
-  rewrite <- h2 in *.
-  rewrite <- h1 in *; eauto.
+  -
+    forwards*: value_value typ.
+    inverts typ as typ1. inverts typ1 as typ1.
+    inverts* val.
+  -
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts val.
+    forwards*: value_value typ.
+    forwards* h1: atyping_inf typ.
+    forwards* h2: atyping_inf2 typ.
+    rewrite h1 in *.
+    rewrite h2 in *.
+    substs*.
 Qed.
 
 
@@ -933,10 +1227,10 @@ Proof.
     +
     forwards* h7: atyping_typing typ2.
     forwards* h8: atyping_typing2 typ2.
-    lets red': H0.
-    inverts* red'.
-    forwards*: CCast_blame H0.
-    forwards*: Cast_unique red H1.
+    forwards* h9: cast_label H0.
+    inverts* h9.
+    forwards* h10: CCast_blame H0.
+    forwards* h11: Cast_unique red h10.
     congruence.
   -
     forwards* h3: atyping_typing2 typ2.
@@ -958,10 +1252,10 @@ Proof.
     +
     forwards* h7: atyping_typing typ2.
     forwards* h8: atyping_typing2 typ2.
-    lets red': H1.
-    inverts* red'.
-    forwards*: CCast_blame H1.
-    forwards*: Cast_unique red H2.
+    forwards* h9: cast_label H1.
+    inverts* h9.
+    forwards* h10: CCast_blame H1.
+    forwards* h11: Cast_unique red h10.
     congruence.
   -
     forwards* h3: atyping_typing2 typ2.
@@ -981,8 +1275,8 @@ Proof.
     +
     forwards* h7: atyping_typing typ2.
     forwards* h8: atyping_typing2 typ2.
-    lets red': H.
-    inverts* red'.
+    forwards* h9: cast_label H.
+    inverts* h9.
     forwards*: CCast_blame H.
     forwards*: Cast_unique red H0.
     congruence.
@@ -1004,8 +1298,8 @@ Proof.
     +
     forwards* h7: atyping_typing typ2.
     forwards* h8: atyping_typing2 typ2.
-    lets red': H.
-    inverts* red'.
+    forwards* h9: cast_label H.
+    inverts* h9.
     forwards*: CCast_blame H.
     forwards*: Cast_unique red H0.
     congruence.
@@ -1020,9 +1314,14 @@ Lemma step_sstep:forall e1 e2 e2' A,
  (exists e22 e1', step e2' (e_exp e22) /\ sstep e1 (e_exp e1') /\ atyping nil e1' Chk A e22).
 Proof.
   introv typ red. gen e1 A.
-  inductions red; intros; eauto.
+  inductions red; intros; eauto;
+  try solve[inverts typ; inverts H];
+  try solve[
+  inverts typ as typ;
+  inverts typ as typ].
   -
-    destruct E; unfold fill in *; inverts* typ.
+    destruct E; unfold fill in *; inverts* typ;
+    try solve[inverts* H0].
     +
       inverts H0. inverts H.
       forwards* lc1: atyping_regular_1r H11.
@@ -1245,10 +1544,10 @@ Proof.
     eapply atyp_sim; eauto.
     +
     forwards* h4: atyping_typing H9.
-    lets red': H4.
-    inverts H4.
-    forwards*: CCast_blame red'.
-    forwards*: Cast_unique H0 H4.
+    forwards* h9: cast_label H4.
+    inverts* h9.
+    forwards* h10: CCast_blame H4.
+    forwards*: Cast_unique H0 h10.
     congruence.
   -
     inverts typ. inverts H3.
@@ -1297,10 +1596,6 @@ Proof.
     left. exists. splits.
     eapply sStep_dyn; eauto.
     eapply atyp_sim; eauto.
-  -
-  inverts typ. inverts H.
-  -
-  inverts typ. inverts H.
 Qed.
 
 
@@ -1360,9 +1655,12 @@ Lemma sstep_step:forall e1 e2 e1' A,
  exists e2', ssteps e2 (e_exp e2') /\ atyping nil e1' Chk A e2' .
 Proof.
   introv typ red. gen e2 A.
-  inductions red; intros; eauto.
+  inductions red; intros; eauto;
+  try solve[inverts typ as typ;inverts typ].
   - (*do step *)
-    destruct E;unfold fill in *;inverts* typ.
+    destruct E;unfold fill in *;inverts* typ;
+    try solve[inverts* H0];
+    try solve[inverts* H1].
     +
       inverts H0.
       *
@@ -1431,10 +1729,6 @@ Proof.
       apply smulti_rred_anno; auto.
       apply rred.
       eapply atyp_sim; eauto.
-      +
-      inverts* H0.
-      +
-      inverts* H0.
   - (* beta *)
     lets lc: atyping_regular_1 typ.
     inverts typ. inverts H2.
@@ -1484,9 +1778,9 @@ Proof.
       rewrite H5.
       eapply atyping_c_subst_simpl; eauto.
       ++
-      lets red': H4.
-      inverts H4.
-      forwards* h2: Cast_blame2 H12 red'.
+      forwards* h9: cast_label H4.
+      inverts* h9.
+      forwards* h2: Cast_blame2 H12 H4.
       forwards* h3: atyping_typing2 H12.
       forwards* h5: Cast_unique H1 h2.
       congruence. 
@@ -1518,9 +1812,9 @@ Proof.
       rewrite H5.
       eapply atyping_c_subst_simpl; eauto.
       ++
-      lets red': H2.
-      inverts H2.
-      forwards* h10: Cast_blame2 H13 red'.
+      forwards* h9: cast_label H2.
+       inverts* h9.
+      forwards* h10: Cast_blame2 H13 H2.
       forwards* h11: atyping_typing2 H13.
       forwards* h12: Cast_unique H1 h10.
       congruence.  
@@ -1544,7 +1838,8 @@ Proof.
     eapply atyp_sim; eauto.
     ++
     lets red': H2.
-    inverts H2.
+    forwards* h9: cast_label red'.
+    inverts* h9.
     forwards* h2: Cast_blame2 H12 red'.
     forwards* h3: atyping_typing2 H12.
     forwards* h5: Cast_unique H0 h2.
@@ -1622,7 +1917,8 @@ Proof.
     eapply atyp_anno;eauto.
     --
     lets red': H2.
-    inverts H2.
+    forwards* h9: cast_label red'.
+    inverts* h9.
     forwards* h2: Cast_blame2 H14 red'.
     forwards* h6: atyping_typing2 H14.
     forwards* h16: Cast_unique H3 h2.
@@ -1657,10 +1953,11 @@ Proof.
     eapply atyp_sim; eauto.
     *
     lets red': H4.
-    inverts H4.
+    forwards* h9: cast_label red'.
+    inverts h9.
     forwards* h10: Cast_blame2 H15 red'.
     forwards* h11: Cast_unique H3 h10.
-    congruence. 
+    congruence.
   - (* betad*)
     inverts typ. inverts* H1.
     +
@@ -1696,7 +1993,8 @@ Proof.
     eapply atyp_sim;eauto.
     ++
     lets red': H1.
-    inverts H1.
+    forwards* h9: cast_label red'.
+    inverts h9.
     forwards* h4: Cast_blame2 H11 red'.
     forwards* h5: atyping_typing2 H11.
     forwards* h6: Cast_unique H0 h4.
@@ -1722,7 +2020,8 @@ Proof.
     eapply atyp_sim;eauto.
     ++
     lets red': H3.
-    inverts H3.
+    forwards* h9: cast_label red'.
+    inverts h9.
     forwards* h4: Cast_blame2 H12 red'.
     forwards* h5: atyping_typing2 H12.
     forwards* h6: Cast_unique H0 h4.
@@ -1752,7 +2051,8 @@ Proof.
       eapply atyp_sim;eauto.
       ++
       lets red': H1.
-      inverts H1.
+      forwards* h9: cast_label red'.
+      inverts h9.
       forwards* h4: Cast_blame2 H11 red'.
       forwards* h5: atyping_typing2 H11.
       forwards* h6: Cast_unique H0 h4.
@@ -1777,7 +2077,8 @@ Proof.
       eapply atyp_sim;eauto.
       ++
       lets red': H1.
-      inverts H1.
+      forwards* h9: cast_label red'.
+      inverts h9.
       forwards* h4: Cast_blame2 H12 red'.
       forwards* h5: atyping_typing2 H12.
       forwards* h6: Cast_unique H0 h4.
@@ -1818,7 +2119,9 @@ Proof.
   introv typ red. gen e2 A.
   inductions red; intros; eauto.
   - (*do step *)
-    destruct E; unfold fill in *; inverts typ.
+    destruct E; unfold fill in *; inverts typ;
+    try solve[
+    inverts* H0].
     +
       inverts H0. 
       * 
@@ -1861,10 +2164,6 @@ Proof.
       forwards*: IHred H9.
       rewrite fill_anno.
       apply Step_blame; eauto.
-    +
-      inverts* H0.
-    +
-      inverts* H0.
   -
     inverts typ.
     inverts H3.
@@ -1906,7 +2205,8 @@ Proof.
     forwards*: value_value2 nt.
     forwards* h1: value_value H11.
     lets h2: H0.
-    inverts* H0.
+    forwards* h9: cast_label h2.
+    inverts h9.
     forwards*: CCast_blame h2.
 Qed.
 
@@ -1920,7 +2220,8 @@ Proof.
   introv typ red. gen e1 A.
   inductions red; intros; eauto.
   - (*do step *)
-    destruct E; unfold fill in *; inverts typ.
+    destruct E; unfold fill in *; inverts typ;
+    try solve[inverts H0].
     +
       inverts H0. inverts H.
       forwards* h1: atyping_regular_1r H11.
@@ -1966,10 +2267,12 @@ Proof.
       rewrite fill_appr.
       eapply sStep_blame; eauto.
       lets red': H13.
-      inverts* H13.
+      forwards* h9: cast_label red'.
+      inverts* h9.
       *
       lets red': H11.
-      inverts* H11.
+      forwards* h9: cast_label red'.
+      inverts h9.
       forwards* h7: value_value2 H8.
       forwards* h6: Cast_blame2 H8 red'.
   -
@@ -1987,7 +2290,8 @@ Proof.
     inverts H2.
     forwards*: value_value2 H9.
     lets red': H0.
-    inverts* red'.
+    forwards* h9: cast_label red'.
+    inverts h9.
     forwards*: Cast_blame2 H9 H0.
     assert(not(value (e_anno e l b A))).
      unfold not;intros nt.

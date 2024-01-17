@@ -175,8 +175,34 @@ Lemma principle_inf: forall v A,
 Proof.
   introv Val Typ.
   gen A.
-  induction Val; introv  Typ; try solve [inverts* Typ].
+  induction Val; introv  Typ; try solve [inverts* Typ;simpl in *;eauto].
+  inverts Typ as h01 h02; simpl in *.
+  forwards* h1: IHVal1 h01.
+  forwards* h2: IHVal2 h02.
+  rewrite h1. rewrite h2.
+  auto.
 Qed.
+
+
+Lemma pattern_uniq: forall t1 t2 t3,
+  pattern t1 t2 ->
+  pattern t1 t3 ->
+  t2 = t3.
+Proof.
+  introv pa1 pa2.
+  inverts pa1; inverts* pa2.
+Qed.
+
+
+Lemma pattern_pro_uniq: forall t1 t2 t3,
+  pattern_pro t1 t2 ->
+  pattern_pro t1 t3 ->
+  t2 = t3.
+Proof.
+  introv pa1 pa2.
+  inverts pa1; inverts* pa2.
+Qed.
+
 
 
 (* stronger than inf unique *)
@@ -195,6 +221,21 @@ Proof.
     forwards * : IHTy1_1 H4.
     inverts* H0.
     inverts* H;inverts* H2.
+  -
+    forwards * h1: IHTy1_1 H2.
+    inverts* h1.
+    forwards * h2: IHTy1_2 H3.
+    inverts* h2.
+  -
+    forwards * h1: IHTy1 H1.
+    inverts h1.
+    forwards* h1: pattern_pro_uniq H H3.
+    inverts* h1.
+  -
+    forwards * h1: IHTy1 H1.
+    inverts h1.
+    forwards* h1: pattern_pro_uniq H H3.
+    inverts* h1.
 Qed.
 
 Lemma inference_unique : forall G e A1 A2,
@@ -212,4 +253,19 @@ Proof.
     forwards * : IHTy1_1 H4.
     inverts* H0.
     inverts* H;inverts* H2.
+  -
+    forwards * h1: IHTy1_1 H2.
+    inverts* h1.
+    forwards * h2: IHTy1_2 H3.
+    inverts* h2.
+  -
+    forwards * h1: IHTy1 H1.
+    inverts h1.
+    forwards* h1: pattern_pro_uniq H H3.
+    inverts* h1.
+  -
+    forwards * h1: IHTy1 H1.
+    inverts h1.
+    forwards* h1: pattern_pro_uniq H H3.
+    inverts* h1.
 Qed.

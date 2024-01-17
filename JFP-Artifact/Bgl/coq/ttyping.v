@@ -365,7 +365,7 @@ Proof.
 Qed.
 
 Lemma ttprinciple_inf: forall v A t,
-  value v -> typing nil v Inf3 A t -> (principal_type v) = A .
+  value v -> typing nil v Inf3 A t -> (dynamic_type v) = A .
 Proof.  
   introv Val Typ.
   gen A.
@@ -672,7 +672,7 @@ Qed.
 
 
 Lemma tprinciple_inf: forall v A t,
-  value v -> ttyping nil v Inf2 A t -> (principal_type v) = A .
+  value v -> ttyping nil v Inf2 A t -> (dynamic_type v) = A .
 Proof.
   introv Val Typ.
   gen A.

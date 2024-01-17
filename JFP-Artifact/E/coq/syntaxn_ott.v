@@ -9,7 +9,9 @@ Inductive nexp : Set :=  (*r expressions *)
  | ne_var_f (x:var) (*r variables *)
  | ne_lit (i:nat): nexp (*r lit *)
  | ne_abs (e:nexp) (*r abstractions *)
- | ne_app (e1:nexp) (e2:nexp) (*r applications *).
+ | ne_app (e1:nexp) (e2:nexp) (*r applications *)
+ | ne_add
+ | ne_addl (i:nat): nexp.
 
 (* EXPERIMENTAL *)
 (** auxiliary functions on the new list types *)
@@ -29,6 +31,8 @@ Fixpoint open_nexp_wrt_nexp_rec (k:nat) (e_5:nexp) (e__6:nexp) {struct e__6}: ne
   | ne_lit i => ne_lit i 
   | (ne_abs e) => ne_abs (open_nexp_wrt_nexp_rec (S k) e_5 e)
   | (ne_app e1 e2) => ne_app (open_nexp_wrt_nexp_rec k e_5 e1) (open_nexp_wrt_nexp_rec k e_5 e2)
+  | ne_add => ne_add
+  | ne_addl i => ne_addl i  
 end.
 
 Definition open_nexp_wrt_nexp e_5 e__6 := open_nexp_wrt_nexp_rec 0 e__6 e_5.
@@ -48,7 +52,15 @@ Inductive lc_nexp : nexp -> Prop :=    (* defn lc_nexp *)
  | lc_ne_app : forall (e1 e2:nexp),
      (lc_nexp e1) ->
      (lc_nexp e2) ->
-     (lc_nexp (ne_app e1 e2)).
+     (lc_nexp (ne_app e1 e2))
+     | lc_ne_add :  
+     (lc_nexp (ne_add))
+     | lc_ne_addl : forall i, 
+     (lc_nexp (ne_addl i))
+.
+
+
+
 (** free variables *)
 Fixpoint fv_nexp (e_5:nexp) : vars :=
   match e_5 with
@@ -57,6 +69,8 @@ Fixpoint fv_nexp (e_5:nexp) : vars :=
   | ne_lit i => {}
   | (ne_abs e) => (fv_nexp e)
   | (ne_app e1 e2) => (fv_nexp e1) \u (fv_nexp e2)
+  | ne_add => {}
+  | ne_addl i => {}
 end.
 
 (** substitutions *)
@@ -67,6 +81,8 @@ Fixpoint subst_nexp (e_5:nexp) (x5:var) (e__6:nexp) {struct e__6} : nexp :=
   | ne_lit i => ne_lit i 
   | (ne_abs e) => ne_abs (subst_nexp e_5 x5 e)
   | (ne_app e1 e2) => ne_app (subst_nexp e_5 x5 e1) (subst_nexp e_5 x5 e2)
+  | ne_add => ne_add 
+  | ne_addl i => ne_addl i 
 end.
 
 

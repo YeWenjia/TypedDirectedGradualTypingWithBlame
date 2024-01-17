@@ -65,6 +65,30 @@ Hint Resolve  sstar_one sstar_trans sstar_transb star_one star_trans star_transb
 
 Definition birred e : Prop := forall b, ~(bstep e b).
 
+
+Lemma UG_not_ground_0: forall A B,
+ UG A B ->
+ not(Ground A).
+Proof.
+  introv gr.
+  inverts gr as h1 h2.
+  inverts h2 as h3 h4.
+  inverts h4 as h4 h5.
+  unfold not;intros nt.
+  inverts h3. 
+  - 
+    inverts* h1.
+  -
+    inverts* h1.
+    inverts nt.
+    apply h4; auto.
+  -
+    inverts* h1.
+    inverts nt.
+    apply h4; auto.
+Qed.
+
+
 Lemma bstep_not_value: forall (v:term),
     valueb v -> birred v.
 Proof.
@@ -78,11 +102,9 @@ Proof.
   inverts* H3;destruct E; unfold fillb in H; inverts* H];
   try solve[inverts* H3;destruct E; unfold fillb in H; inverts* H].
   inverts* H; try solve[ destruct E; unfold fillb in H0; inverts* H0];
-  try solve[inverts H4].
-  inverts* H6. inverts* H10.
-  inverts* H6.
-  inverts* H11.
-  inverts* H11.
+  try solve[inverts H4];
+  try solve[inverts H6].
+  forwards*: UG_not_ground_0 H8.
 Qed.
 
 Lemma valueb_lc : forall v,

@@ -67,9 +67,9 @@ There are three folders and we show some important definitions and theorems corr
 | Theorem 3.3          | Progress              | Bg/coq/Type\_Safety.v             | progress                   |
 | Theorem 4.1          | Relation(labels)      | Bg/coq/Label.v                    | bgl\_to\_bg                |
 | Theorem 4.1          | Relation(labels)      | Bg/coq/Label.v                    | bgl\_to\_bg\_typing        |
-| Theorem 4.4          | Embedding             | Bg/coq/embed.v                    | dynamic\_typing            |
-| Theorem 4.5          | Equivalence           | Bg/coq/embed.v                    | static\_Typing\_dyn        |
-| Theorem 4.5          | Equivalence           | Bg/coq/embed.v                    | static\_dtyping\_dyn       |
+| Theorem 4.4          | Embedding             | Bgl/coq/embed.v                    | dynamic\_typing            |
+| Theorem 4.5          | Equivalence           | Bgl/coq/embed.v                    | static\_Typing\_dyn        |
+| Theorem 4.5          | Equivalence           | Bgl/coq/embed.v                    | static\_dtyping\_dyn       |
 | Fig. 6               | Syntax                | Bgl/coq/syntax\_ott.v             |                            |
 | Fig. 6               | value                 | Bgl/coq/syntax\_ott.v             | value                      |
 | Fig. 6               | Ground type           | Bgl/coq/syntaxb\_ott.v            | Ground                     |

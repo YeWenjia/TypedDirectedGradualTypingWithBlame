@@ -24,7 +24,10 @@ Inductive st : Set :=  (*r input type or projection label *)
  | e_pro (e1:exp) (e2:exp)
  | e_l (e:exp) 
  | e_r (e:exp)
- | e_val (e:exp) (A: typ).
+ | e_val (e:exp) (A: typ)
+ | e_add
+ | e_addl (i5:i) 
+.
 
  Inductive dirflag : Set :=  (*r checking direction *)
  | Inf : dirflag
@@ -57,6 +60,8 @@ Inductive st : Set :=  (*r input type or projection label *)
     | (e_l e) => e_l (open_exp_wrt_exp_rec k e_5 e)
     | (e_r e) => e_r (open_exp_wrt_exp_rec k e_5 e)
     | e_val e t => e_val (open_exp_wrt_exp_rec k e_5 e) t
+    | (e_add) => e_add
+    | (e_addl i5) => e_addl i5
   end.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
@@ -92,7 +97,12 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
      (lc_exp (e_r e))
  | lc_e_val : forall (e:exp) t,
     (lc_exp e) ->
-    (lc_exp (e_val e t)).
+    (lc_exp (e_val e t))
+ | lc_e_add : 
+     (lc_exp e_add)
+ | lc_e_addl : forall i5,
+     (lc_exp (e_addl i5))
+.
 
 
 
@@ -109,6 +119,8 @@ Fixpoint fv_exp (e_5:exp) : vars :=
   | (e_l e) => (fv_exp e)
   | (e_r e) => (fv_exp e)
   | e_val e t => (fv_exp e)
+  | (e_add) => {}
+  | (e_addl i5) => {}
 end.
 
 (** substitutions *)
@@ -124,6 +136,8 @@ Fixpoint subst_exp (e_5:exp) (x5:var) (e__6:exp) {struct e__6} : exp :=
   | (e_l e) => e_l (subst_exp e_5 x5 e)
   | (e_r e) => e_r (subst_exp e_5 x5 e)
   | (e_val e t) => e_val (subst_exp e_5 x5 e) t
+  | (e_add) => e_add
+  | (e_addl i5) => e_addl i5
 end.
 
 
@@ -134,6 +148,8 @@ Fixpoint dynamic_type (v:exp) : typ :=
   | (e_anno e A) => A
   | (e_pro v1 v2) => t_pro (dynamic_type v1) (dynamic_type v2)
   | e_val e t => t
+  | (e_add) => t_arrow t_int (t_arrow t_int t_int)
+  | (e_addl i) => (t_arrow t_int t_int)
   | _ => t_dyn
   end.
 
@@ -148,7 +164,12 @@ Inductive pval : exp -> Prop :=
  | pval_pro : forall u1 u2,
      pval u1 ->
      pval u2 ->
-     pval  (e_pro u1 u2).
+     pval  (e_pro u1 u2)
+ | pval_add : 
+     pval (e_add) 
+ | pval_addl : forall (i5:i),
+     pval (e_addl i5) 
+.
 
 
 
@@ -256,7 +277,14 @@ Inductive Typing : ctx -> exp -> dirflag -> typ -> Prop :=    (* defn Typing *)
  | Typ_absv : forall (G:ctx) L (e e2:exp) A B,
      ( forall x , x \notin  L  -> Typing  (cons ( x , A )  G )   ( open_exp_wrt_exp e (e_var_f x) )  Chk B )  ->
      Typing G e2 Inf A ->
-     Typing G (e_app (e_abs e) e2) Chk B.
+     Typing G (e_app (e_abs e) e2) Chk B
+ | Typ_add : forall (G:ctx),
+     uniq  G  ->
+    Typing G (e_add) Inf (t_arrow t_int (t_arrow t_int t_int))
+ | Typ_addl : forall (G:ctx) (i5:i),
+     uniq  G  ->
+    Typing G (e_addl i5) Inf (t_arrow t_int t_int)
+.
 
 
 Inductive simpl_item : Type :=
@@ -275,6 +303,10 @@ Inductive simpl_wf : simpl_item -> Prop :=
                     simpl_wf (sappCtxL e)
      | swf_appr : forall e,
                     simpl_wf (sappCtxR (e_abs e))
+     | swf_appr2 : forall A,
+                    simpl_wf (sappCtxR (e_val e_add A))
+     | swf_appr3 : forall A i,
+                    simpl_wf (sappCtxR (e_val (e_addl i) A))
      | swf_prol : forall (e : exp),
                      lc_exp e ->
                     simpl_wf (sproCtxL e)
@@ -343,15 +375,28 @@ Inductive Cast : exp -> typ -> res -> Prop :=
     Cast p1 A1  (Expr p1') ->
     Cast p2 A2  (Expr  p2') ->
     Cast (e_pro p1 p2) (t_pro A1 A2) (Expr (e_pro p1' p2'))
- | Cast_prol: forall p1 p2 A1 A2,
+ | Cast_prol: forall p1 p2 A1 A2 r,
     Cast p1 A1  Blame ->
+    Cast p2 A2  r ->
     Cast (e_pro p1 p2) (t_pro A1 A2) Blame
- | Cast_pror: forall p1 p2 A1 A2,
+ | Cast_pror: forall p1 p2 A1 A2 p1',
+   Cast p1 A1  (Expr p1') ->
     Cast p2 A2 Blame ->
     Cast (e_pro p1 p2) (t_pro A1 A2) Blame
+ | Cast_add : forall A,
+    Cast e_add  A  (Expr e_add)
+ | Cast_addl : forall i5 A,
+    Cast (e_addl i5)  A  (Expr (e_addl i5))
 .
 
-
+Inductive Castv : exp -> typ -> res -> Prop :=
+  | Castv_def : forall p A A' B p',
+     Cast p A' (Expr p') ->
+     meet (dynamic_type p) B A' ->
+    Castv (e_val p A) B (Expr (e_val p' B))
+  | Castv_udef : forall p A B, 
+     (not(sim (dynamic_type p) B) ) ->
+    Castv (e_val p A) B Blame.
 
 
 (* Inductive TypeLists : exp -> list typ -> res -> Prop :=  
@@ -368,6 +413,10 @@ Inductive step : exp -> res -> Prop :=
       step (e_anno (e_abs e) A0) (Expr (e_val (e_anno (e_anno (e_abs e) (t_arrow A B)) (t_arrow A B)) A0))
    | Step_lit : forall i,
       step (e_lit i) (Expr (e_val (e_lit i) t_int))
+   | Step_c1 : 
+      step (e_add) (Expr (e_val (e_add) (t_arrow t_int (t_arrow t_int t_int))))
+   | Step_c2 : forall i,
+      step (e_addl i) (Expr (e_val (e_addl i) ((t_arrow t_int t_int))))
    | Step_pro : forall p1 p2 t1 t2,
        pval p1 ->
        pval p2 ->
@@ -425,6 +474,26 @@ Inductive step : exp -> res -> Prop :=
        pval p1 ->
        pval p2 ->
       step (e_r (e_val (e_pro p1 p2) A)) (Expr (e_val p2 A2))
+ | Step_add : forall i A B A1 A2,
+       pattern A (t_arrow A1 A2) ->
+     step (e_app (e_val e_add A) (e_val (e_lit i) B))  (Expr (e_val (e_addl i) A2))
+ | Step_addl : forall i1 i2 A B A1 A2,
+     pattern A (t_arrow A1 A2) ->
+     step (e_app (e_val (e_addl i1) A) (e_val (e_lit i2) B))  (Expr (e_val (e_lit (i1+i2)) A2))
+ | Step_addp : forall p A B,
+     not(sim (dynamic_type p) t_int) ->
+     pval p ->
+     step (e_app (e_val e_add A) (e_val p B)) Blame
+ | Step_addlp : forall i5 p A B,
+      not(sim (dynamic_type p) t_int) ->
+      pval p ->
+     step (e_app (e_val (e_addl i5) A) (e_val p B)) Blame 
+ | Step_addpp : forall A e,
+     lc_exp (e_abs e) ->
+     step (e_app (e_val e_add A) (e_abs e)) Blame
+ | Step_addlpp : forall i5 e A ,
+     lc_exp (e_abs e) ->
+     step (e_app (e_val (e_addl i5) A) (e_abs e)) Blame 
 .
 
 
@@ -461,7 +530,12 @@ Inductive epre : exp -> exp -> Prop :=
     epre p1 p2 ->
     tpre t1 t2 ->
     tpre (dynamic_type p2) t2 ->
-    epre (e_val p1 t1) (e_val p2 t2).
+    epre (e_val p1 t1) (e_val p2 t2)
+ | ep_add :
+    epre (e_add) (e_add) 
+ | ep_addl i :
+    epre (e_addl i) (e_addl i) 
+.
 
 
 

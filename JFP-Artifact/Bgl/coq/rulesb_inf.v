@@ -24,8 +24,8 @@ Definition typ_mutind :=
 Scheme typ_rec' := Induction for typ Sort Set.
 
 Definition typ_mutrec :=
-  fun H1 H2 H3 H4 H5 =>
-  typ_rec' H1 H2 H3 H4 H5.
+  fun H1 H2 H3 H4 H5 H6 =>
+  typ_rec' H1 H2 H3 H4 H5 H6.
 
 Scheme term_ind' := Induction for term Sort Prop.
 
@@ -66,6 +66,7 @@ Fixpoint size_typ (A1 : typ) {struct A1} : nat :=
     | t_int => 1
     | t_arrow A2 B1 => 1 + (size_typ A2) + (size_typ B1)
     | t_dyn => 1
+    | t_pro A2 B1 => 1 + (size_typ A2) + (size_typ B1)
   end.
 
 Fixpoint size_term (t1 : term) {struct t1} : nat :=

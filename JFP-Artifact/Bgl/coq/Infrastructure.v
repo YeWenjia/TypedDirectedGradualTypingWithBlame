@@ -1,7 +1,8 @@
 Require Import LibTactics.
 Require Import Metalib.Metatheory.
 Require Import syntax_ott
-               rules_inf.
+               rules_inf
+               syntaxn_ott.
 
 Require Import List. Import ListNotations.
 Require Import Strings.String.
@@ -109,7 +110,8 @@ Ltac gather_atoms ::=
   let E := gather_atoms_with (fun x : ctx => dom x) in
   let F := gather_atoms_with (fun x : env => dom x) in
   let G := gather_atoms_with (fun x : term => fv_term x) in
-  constr:(A `union` B `union` C `union` D `union` F `union` G).
+  let H := gather_atoms_with (fun x : nexp => fv_nexp x) in
+  constr:(A `union` B `union` C `union` D `union` E `union` F `union` G `union` H).
 
 
 
@@ -140,7 +142,7 @@ Qed.
 
 
 Lemma multi_rred_app : forall v t t' l b A B,
-    (principal_type v) = (t_arrow A B) ->
+    (dynamic_type v) = (t_arrow A B) ->
      value v -> t ->** (e_exp t') -> (e_app v l b t) ->** (e_exp (e_app v l b t')).
 Proof.
   introv ty Val Red.
@@ -151,8 +153,19 @@ Proof.
 Qed.
 
 
+Lemma multi_rred_pro : forall v t t',
+     value v -> t ->** (e_exp t') -> (e_pro v t) ->** (e_exp (e_pro v t')).
+Proof.
+  introv  Val Red.
+  inductions Red; eauto.
+  forwards*: IHRed.
+  assert(wellformed (proCtxR v)). eauto.
+  forwards*: Step_eval H1 H.
+Qed.
+
+
 Lemma multi_bblame_app : forall v t l1 b1 l2 b2 A B,
-(principal_type v) = (t_arrow A B) ->
+(dynamic_type v) = (t_arrow A B) ->
     value v -> t ->** (e_blame l1 b1) -> (e_app v l2 b2 t) ->** (e_blame l1 b1).
 Proof.
   introv ty Val Red.
@@ -166,7 +179,19 @@ Proof.
   forwards*: Step_blame H0 H.
 Qed.
 
-
+Lemma multi_bblame_pro : forall v t l1 b1 ,
+    value v -> t ->** (e_blame l1 b1) -> (e_pro v t) ->** (e_blame l1 b1).
+Proof.
+  introv Val Red.
+  inductions Red; eauto.
+  eapply step_nb.
+  assert(wellformed (proCtxR v)). eauto.
+  forwards*: Step_eval H0 H.
+  simpl. forwards*: IHRed.
+  apply step_b. 
+  assert(wellformed (proCtxR v)). eauto.
+  forwards*: Step_blame H0 H.
+Qed.
 
 
 Lemma multi_bblame_appv : forall v t l1 b1,
@@ -223,6 +248,35 @@ Qed.
 
 
 
+
+
+Lemma multi_rred_pro2 : forall t1 t2 t1' ,
+    lc_exp t2 -> t1 ->** (e_exp t1') -> (e_pro t1 t2) ->** (e_exp (e_pro t1' t2)).
+Proof.
+  introv Val Red.
+  inductions Red; eauto.
+  assert(wellformed (proCtxL t2)). eauto.
+  forwards*: Step_eval H0 H.
+Qed.
+
+
+Lemma multi_bblame_pro2 : forall t1 t2 l1 b1,
+    lc_exp t2 -> t1 ->** e_blame l1 b1 -> (e_pro t1 t2) ->** e_blame l1 b1.
+Proof.
+  introv Val Red.
+  inductions Red; eauto.
+  eapply step_nb.
+  assert(wellformed (proCtxL t2 )). eauto.
+  forwards*: Step_eval H0 H.
+  simpl. forwards*: IHRed.
+  apply step_b. 
+  assert(wellformed (proCtxL t2)). eauto.
+  forwards*: Step_blame H0 H.
+Qed.
+
+
+
+
 Lemma multi_rred_app2 : forall t1 t2 t1' l b,
     lc_exp t2 -> t1 ->** (e_exp t1') -> (e_app t1 l b t2) ->** (e_exp (e_app t1' l b t2)).
 Proof.
@@ -256,6 +310,59 @@ Proof.
   forwards*: Step_eval H0 H.
 Qed.
 
+Lemma multi_bblame_l : forall t l0 b0 l b,
+    t ->** e_blame l b -> (e_l t l0 b0) ->** e_blame l b.
+Proof.
+  introv Red.
+  inductions Red; eauto.
+  eapply step_nb.
+  assert(wellformed (lCtx l0 b0)). eauto.
+  forwards*: Step_eval H0 H.
+  simpl. forwards*: IHRed.
+  apply step_b. 
+  assert(wellformed (lCtx l0 b0)). eauto.
+  forwards*: Step_blame H0 H.
+Qed.
+
+
+
+Lemma multi_rred_l : forall t t' l b ,
+    t ->** (e_exp t') -> (e_l t l b) ->** (e_exp (e_l t' l b)).
+Proof.
+  introv Red.
+  inductions Red; eauto.
+  assert(wellformed (lCtx l b)). eauto.
+  forwards*: Step_eval H0 H.
+Qed.
+
+
+
+Lemma multi_bblame_r : forall t l0 b0 l b,
+    t ->** e_blame l b -> (e_r t l0 b0) ->** e_blame l b.
+Proof.
+  introv Red.
+  inductions Red; eauto.
+  eapply step_nb.
+  assert(wellformed (rCtx l0 b0)). eauto.
+  forwards*: Step_eval H0 H.
+  simpl. forwards*: IHRed.
+  apply step_b. 
+  assert(wellformed (rCtx l0 b0)). eauto.
+  forwards*: Step_blame H0 H.
+Qed.
+
+
+
+Lemma multi_rred_r : forall t t' l b ,
+    t ->** (e_exp t') -> (e_r t l b) ->** (e_exp (e_r t' l b)).
+Proof.
+  introv Red.
+  inductions Red; eauto.
+  assert(wellformed (rCtx l b)). eauto.
+  forwards*: Step_eval H0 H.
+Qed.
+
+
 Lemma multi_bblame_anno : forall t A l0 b0 l b,
     t ->** e_blame l b -> (e_anno t l0 b0 A) ->** e_blame l b.
 Proof.
@@ -269,7 +376,6 @@ Proof.
   assert(wellformed (annoCtx l0 b0 A)). eauto.
   forwards*: Step_blame H0 H.
 Qed.
-
 
 
 
@@ -329,11 +435,41 @@ Proof.
 Qed.
 
 
+Lemma fill_prol: forall e1 e2,
+  (e_pro e1  e2) = (fill (proCtxL e2 )  e1).
+Proof.
+  introv.
+  eauto.
+Qed.
+
+
+Lemma fill_pror: forall e1 e2,
+  (e_pro e1 e2) = (fill (proCtxR e1)  e2).
+Proof.
+  introv.
+  unfold fill; eauto.
+Qed.
+
+
+Lemma fill_l: forall e1 l b,
+  (e_l e1 l b) = (fill (lCtx l b)  e1).
+Proof.
+  introv.
+  unfold fill; eauto.
+Qed.
+
+
+Lemma fill_r: forall e1 l b,
+  (e_r e1 l b) = (fill (rCtx l b)  e1).
+Proof.
+  introv.
+  unfold fill; eauto.
+Qed.
 
 
 
 Lemma smulti_rred_app : forall v t t' l b A B,
-    (principal_type v) = (t_arrow A B) ->
+    (dynamic_type v) = (t_arrow A B) ->
      value v -> ssteps t  (e_exp t') -> ssteps (e_app v l b t) (e_exp (e_app v l b t')).
 Proof.
   introv ty Val Red.
@@ -349,7 +485,7 @@ Qed.
 
 
 Lemma smulti_bblame_app : forall v t l1 b1 l2 b2 A B,
-(principal_type v) = (t_arrow A B) ->
+(dynamic_type v) = (t_arrow A B) ->
     value v -> ssteps t (e_blame l1 b1) -> ssteps (e_app v l2 b2 t) (e_blame l1 b1).
 Proof.
   introv ty Val Red.

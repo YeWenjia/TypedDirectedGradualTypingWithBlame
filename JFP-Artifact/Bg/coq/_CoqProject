@@ -7,14 +7,9 @@ LibTactics.v
 Type_Safety.v
 Typing.v
 Typing_b.v
-embed.v
 rules_inf.v
 rulesb_inf.v
-rulesn_inf.v
-soundness.v
-soundness_blame.v
+rulesl_inf.v
 syntax_ott.v
 syntaxb_ott.v
 syntaxl_ott.v
-syntaxn_ott.v
-ttyping.v

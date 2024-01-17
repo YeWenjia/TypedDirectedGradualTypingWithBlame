@@ -50,7 +50,7 @@ Qed.
 
 
 Lemma principle_if: forall v A t,
- value v -> typing nil v Inf3 A t -> principal_type v = A.
+ value v -> typing nil v Inf3 A t -> dynamic_type v = A.
 Proof.
   introv H typ.
   inductions H; inverts* typ; eauto.
@@ -81,53 +81,93 @@ Lemma Cast_soundness_blame: forall v t p b A,
   Cast v p b A (e_blame p b) ->
   t ->* (t_blame p b) .
 Proof.
-  introv Typ val Red.
-  inductions Red; intros. 
-  inverts Typ as typ. inverts typ as typ.
-  inverts typ as typ.
-  forwards* h1: typing_regular_3 typ. 
-  inverts typ; simpl in *. 
+  introv Typ val Red. gen t.
+  inductions Red; intros.
   -
-    inverts val; simpl in *.
-    forwards* h3: value_valueb1 H5.
-    forwards* h2: principle_if H5.
-    rewrite h2 in *.
-    inverts H3.
-    +
-    rewrite <- TEMP in *.
-    destruct A; try solve[exfalso; apply H; auto].
-    destruct(eq_type A2). destruct(eq_type A1).
-    *
-    subst.
-    eapply bstep_b.
-    apply bStep_vanyp; eauto.
-    unfold not; intros n;inverts n.
-    *
+    inverts Typ as typ. inverts typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts val as val1 val2.
+    forwards* h1: principle_if typ.
+    forwards* h2: Cast_sim_aux Red.
+    rewrite h1 in *.
+    forwards* h3: IHRed.
+    forwards* h4: value_valueb_typ typ.
+    forwards* h5: UG_sim_l H h2.
+    forwards* h7: ug_ground_r H.
+    forwards* h6: ground_eq h5.
+    rewrite h6 in *.
     eapply bstep_nb.
-    eapply bStep_dyna with (B := (t_arrow t_dyn t_dyn)); auto.
-    unfold not; intros n;inverts n.
-    unfold not; intros n;inverts* n.
-    rewrite fillb_cast.
-    eapply bstep_b.
-    apply Step_blameb; auto.
-    eapply bStep_vanyp; auto.
-    unfold not; intros n;inverts* n.
-    *
+    eapply bStep_dyna; eauto.
     eapply bstep_nb.
-    eapply bStep_dyna with (B := (t_arrow t_dyn t_dyn)); auto.
-    unfold not; intros n;inverts n.
-    unfold not; intros n;inverts* n.
     rewrite fillb_cast.
-    eapply bstep_b.
-    apply Step_blameb; auto.
-    eapply bStep_vanyp; auto.
-    unfold not; intros n;inverts* n.
+    apply Step_evalb.
+    auto.
+    apply bStep_vany; eauto.
+    simpl.
+    auto.
+  -
+    inverts Typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts val as val1 val2.
+    forwards* h1: principle_if typ.
+    rewrite h1 in *.
+    forwards* h2: UG_decidable A.
+    inverts h2 as h2.
     +
-    rewrite <- TEMP in *.
-    destruct A; try solve[exfalso; apply H; auto].
-    eapply bstep_b.
-    apply bStep_vanyp; eauto.
-    unfold not; intros n;inverts n.
+      inverts h2 as h2.
+      forwards* h3: ug_ground_r h2.
+      forwards* h4: UG_to_sim h2.
+      assert(not(A0 = x)) as h5.
+      unfold not;intros nt.
+      rewrite nt  in *.
+      apply H; eauto.
+      forwards* h0: value_valueb_typ typ.
+      eapply bstep_nb.
+      apply bStep_dyna; eauto.
+      apply bstep_b.
+      rewrite fillb_cast.
+      apply Step_blameb; auto.
+    +
+      forwards* h0: value_valueb_typ typ.
+      apply bstep_b.
+      apply bStep_vanyp; auto.
+      *
+      forwards* h3: Ground_decidable A.
+      inverts h3 as h3;auto.
+      exfalso.
+      destruct A; try solve[exfalso; apply h3; auto].
+      --
+      forwards* h4: h2 (t_arrow t_dyn t_dyn).
+      apply h4.
+      unfold UG; splits*;
+      try solve[unfold not;intros nt;inverts nt];
+      try solve[unfold not;intros nt;inverts nt as nt;inverts nt].
+      unfold not;intros nt;inverts nt as nt.
+      apply h3; auto.
+      --
+      exfalso; apply H; auto.
+      --
+      forwards* h4: h2 (t_pro t_dyn t_dyn).
+      apply h4.
+      unfold UG; splits*;
+      try solve[unfold not;intros nt;inverts nt];
+      try solve[unfold not;intros nt;inverts nt as nt;inverts nt].
+      unfold not;intros nt;inverts nt as nt.
+      apply h3; auto.
+      *
+      unfold not;intros nt.
+      substs*.
+  -
+    inverts Typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+  -
+    inverts Typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
 Qed.
 
 
@@ -139,7 +179,9 @@ Lemma Soundness_blame_one: forall e t dir p b A,
 Proof.
   introv Typ J. gen A dir t.
   inductions J; intros.
-  - destruct E; unfold fill in *.
+  - destruct E; unfold fill in *;
+    try solve[inverts Typ as typ; 
+    inverts typ as typ].
     + inverts Typ.
       * forwards*: IHJ H8. 
       apply multi_blame_app2; eauto.
@@ -217,7 +259,7 @@ Proof.
       forwards*: IHJ H7.    
       apply multi_blame_app; eauto.
       inverts H.
-      forwards*: value_valueb1 H3.
+      forwards*: value_valueb1 H3.  
   - 
     inverts Typ.
     + 
@@ -241,16 +283,17 @@ Proof.
       forwards* h1: principle_if H11.
       rewrite h1 in *. inverts H1.
   - 
-    inverts Typ. 
+    inverts Typ as typ. 
     *
-    lets H0':H0.
-    inverts* H0.
-    forwards*: Cast_soundness_blame H0'.
+    forwards* h1: cast_label H0.
+    inverts h1 as h1.
+    forwards*: Cast_soundness_blame H0.
     *
-    inverts H2.
+    inverts typ as typ.
     --
     lets H0':H0.
-    inverts* H0.
+    forwards* h1: cast_label H0.
+    inverts h1 as h1.
     forwards*: Cast_soundness_blame H0'.
     apply multi_blame_cast; eauto.          
 Qed.
@@ -289,16 +332,13 @@ Proof.
     destruct E; unfold fillb; inverts x;
     try forwards*: bstep_not_value red.
   -
-    inverts* typ; inverts h1.
-    forwards* h2: btyping_typing H10.
-    forwards*: principle_inf h2.
-    rewrite <- H3 in *. 
+    inverts typ as typ; inverts h1 as hh1 hh2.
+    forwards* h2: btyping_typing typ.
+    forwards* h3: principle_inf h2.
+    rewrite <- h3 in *. 
     eapply Cast_blame;eauto.
     unfold not;intros nt.
-    inverts H0. inverts* H.
-    rewrite <- H4 in nt. inverts nt.
-    inverts* H.
-    rewrite <- H4 in nt. inverts nt.
+    forwards* h4: ground_eq nt.
 Qed.
 
 
@@ -444,10 +484,7 @@ Proof.
     rewrite <- h3 in *. 
     eapply Cast_blame;eauto.
     unfold not;intros nt.
-    inverts H0. inverts* H.
-    rewrite <- H3 in nt. inverts nt.
-    inverts* H.
-    rewrite <- H3 in nt. inverts nt.
+    forwards*: ground_eq nt.
 Qed.
 
 
@@ -652,52 +689,92 @@ Lemma typing_Cast_soundb: forall v t p b A,
   Cast v p b A (e_blame p b) ->
   t ->* (t_blame p b) .
 Proof.
-  introv Typ val Red.
-  inductions Red; intros. 
-  inverts Typ as typ. inverts typ as typ.
-  forwards* h1: btyping_regular_1 typ.
-  inverts val as h2 val.
-  forwards* h3: btyping_typing typ.
-  forwards* h4: principle_inf h3.
-  rewrite h4 in *.
-  inverts h2.
+  introv Typ val Red. gen t.
+  inductions Red; intros.
   -
-    rewrite <- TEMP in *.
-    destruct A; try solve[exfalso; apply H; auto].
-    forwards*: value_valueb2 typ.
-    destruct(eq_type A2). destruct(eq_type A1).
-    +
-      subst.
-      eapply bstep_b.
-      apply bStep_vanyp; eauto.
-      unfold not; intros n;inverts n.
-    +
-      eapply bstep_nb.
-      apply bStep_dyna with (B := (t_arrow t_dyn t_dyn)); auto.
-      unfold not; intros n;inverts n.
-      unfold not; intros n;inverts* n.
-      rewrite fillb_cast.
-      eapply bstep_b.
-      apply Step_blameb; auto.
-      eapply bStep_vanyp; auto.
-      unfold not; intros n;inverts* n.
-    +
-      eapply bstep_nb.
-      apply bStep_dyna with (B := (t_arrow t_dyn t_dyn)); auto.
-      unfold not; intros n;inverts n.
-      unfold not; intros n;inverts* n.
-      rewrite fillb_cast.
-      eapply bstep_b.
-      apply Step_blameb; auto.
-      eapply bStep_vanyp; auto.
-      unfold not; intros n;inverts* n.
+    inverts Typ as typ.
+    inverts typ as typ.
+    inverts val as h2 val.
+    forwards* h3: btyping_typing typ.
+    forwards* h4: principle_inf h3.
+    forwards*h5: value_valueb2 typ.
+    forwards* h6: Cast_sim_aux Red.
+    rewrite h4 in *.
+    forwards* h7: UG_sim_l H h6.
+    forwards* h8: UG_to_sim H.
+    forwards* h9: ug_ground_r H.
+    forwards*h10: ground_eq h7.
+    rewrite h10 in *.
+    forwards* h1: IHRed.
+    eapply bstep_nb.
+    eapply bStep_dyna; eauto.
+    eapply bstep_nb.
+    rewrite fillb_cast.
+    apply Step_evalb.
+    auto.
+    apply bStep_vany; eauto.
+    simpl.
+    auto.
   -
-    rewrite <- TEMP in *.
-    destruct A; try solve[exfalso; apply H; auto].
-    forwards*: value_valueb2 typ.
-    eapply bstep_b.
-    apply bStep_vanyp; eauto.
-    unfold not; intros n;inverts n.
+    inverts Typ as typ.
+    inverts typ as typ.
+    forwards* h1: btyping_regular_1 typ.
+    inverts val as h2 val.
+    forwards* h3: btyping_typing typ.
+    forwards* h4: principle_inf h3.
+    rewrite h4 in *.
+    forwards* hh2: UG_decidable A.
+    inverts hh2 as hh2.
+    +
+      inverts hh2 as hh2.
+      forwards* hh3: ug_ground_r hh2.
+      forwards* hh4: UG_to_sim hh2.
+      assert(not(A1 = x)) as hh5.
+      unfold not;intros nt.
+      rewrite nt  in *.
+      apply H; eauto.
+      forwards* hh0: value_valueb2 typ.
+      eapply bstep_nb.
+      apply bStep_dyna; eauto.
+      apply bstep_b.
+      rewrite fillb_cast.
+      apply Step_blameb; auto.
+    +
+      forwards* h0: value_valueb2 typ.
+      apply bstep_b.
+      apply bStep_vanyp; auto.
+      *
+      forwards* hh3: Ground_decidable A.
+      inverts hh3 as hh3;auto.
+      exfalso.
+      destruct A; try solve[exfalso; apply hh3; auto].
+      --
+      forwards* hh4: hh2 (t_arrow t_dyn t_dyn).
+      apply hh4.
+      unfold UG; splits*;
+      try solve[unfold not;intros nt;inverts nt];
+      try solve[unfold not;intros nt;inverts nt as nt;inverts nt].
+      unfold not;intros nt;inverts nt as nt.
+      apply hh3; auto.
+      --
+      exfalso; apply H; auto.
+      --
+      forwards* hh4: hh2 (t_pro t_dyn t_dyn).
+      apply hh4.
+      unfold UG; splits*;
+      try solve[unfold not;intros nt;inverts nt];
+      try solve[unfold not;intros nt;inverts nt as nt;inverts nt].
+      unfold not;intros nt;inverts nt as nt.
+      apply hh3; auto.
+      *
+      unfold not;intros nt.
+      substs*.
+  -
+    inverts Typ as typ.
+    inverts typ as typ.
+  -
+    inverts Typ as typ.
+    inverts typ as typ.
 Qed.
 
 
@@ -727,7 +804,8 @@ Proof.
   - 
     inverts Typ as typ h1. 
     lets H0':H0.
-    inverts* H0.
+    forwards*h0: cast_label H0.
+    inverts h0.
     forwards*: typing_Cast_soundb H0'. 
 Qed.
 

@@ -30,14 +30,14 @@ Definition typ_mutrec :=
 Scheme exp_ind' := Induction for exp Sort Prop.
 
 Definition exp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 =>
-  exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 =>
+  exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 .
 
 Scheme exp_rec' := Induction for exp Sort Set.
 
 Definition exp_mutrec :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9  H10 H11 H12 =>
-  exp_rec' H1 H2 H3 H4 H5 H6 H7 H8 H9  H10 H11 H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9  H10 H11 H12  H13 H14 =>
+  exp_rec' H1 H2 H3 H4 H5 H6 H7 H8 H9  H10 H11 H12 H13 H14 .
 
 
 (* *********************************************************************** *)
@@ -55,6 +55,8 @@ Fixpoint close_exp_wrt_exp_rec (n1 : nat) (x1 : var) (e1 : exp) {struct e1} : ex
     | e_l e2 => e_l (close_exp_wrt_exp_rec n1 x1 e2)
     | e_r e2 => e_r (close_exp_wrt_exp_rec n1 x1 e2)
     | e_val e2 A1 => e_val (close_exp_wrt_exp_rec n1 x1 e2) A1
+    | e_add => e_add
+    | e_addl i5 =>  e_addl i5 
   end.
 
 Definition close_exp_wrt_exp x1 e1 := close_exp_wrt_exp_rec 0 x1 e1.
@@ -83,6 +85,8 @@ Fixpoint size_exp (e1 : exp) {struct e1} : nat :=
     | e_l e2 => 1 + (size_exp e2) 
     | e_r e2 => 1 + (size_exp e2) 
     | e_val e2 A1 => 1 + (size_exp e2) + (size_typ A1)
+    | e_add => 1
+    | e_addl i5 => 1
   end.
 
 
@@ -121,13 +125,18 @@ Inductive degree_exp_wrt_exp : nat -> exp -> Prop :=
     degree_exp_wrt_exp n1 (e_r e1)
  | degree_wrt_exp_e_val : forall n1 e1 A1,
     degree_exp_wrt_exp n1 e1 ->
-    degree_exp_wrt_exp n1 (e_val e1 A1).
+    degree_exp_wrt_exp n1 (e_val e1 A1)
+ | degree_wrt_exp_e_add : forall n1,
+    degree_exp_wrt_exp n1 (e_add)
+ | degree_wrt_exp_e_addl : forall n1 i, 
+    degree_exp_wrt_exp n1 (e_addl i)
+.
 
 Scheme degree_exp_wrt_exp_ind' := Induction for degree_exp_wrt_exp Sort Prop.
 
 Definition degree_exp_wrt_exp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 =>
-  degree_exp_wrt_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 =>
+  degree_exp_wrt_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14.
 
 Hint Constructors degree_exp_wrt_exp : core lngen.
 
@@ -162,25 +171,30 @@ Inductive lc_set_exp : exp -> Set :=
     lc_set_exp (e_r e1)
   | lc_set_e_val : forall e1 A1,
     lc_set_exp e1 ->
-    lc_set_exp (e_val e1 A1).
+    lc_set_exp (e_val e1 A1)
+  | lc_set_e_add : 
+    lc_set_exp (e_add)
+  | lc_set_e_addl : forall i1,
+    lc_set_exp (e_addl i1)
+.
 
 Scheme lc_exp_ind' := Induction for lc_exp Sort Prop.
 
 Definition lc_exp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12 =>
-  lc_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11  H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12 H13 H14 =>
+  lc_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11  H12 H13 H14 .
 
 Scheme lc_set_exp_ind' := Induction for lc_set_exp Sort Prop.
 
 Definition lc_set_exp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12 =>
-  lc_set_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12  H13 H14 =>
+  lc_set_exp_ind' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11  H12 H13 H14 .
 
 Scheme lc_set_exp_rec' := Induction for lc_set_exp Sort Set.
 
 Definition lc_set_exp_mutrec :=
-  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11 H12 =>
-  lc_set_exp_rec' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 H9 H10  H11 H12  H13 H14 =>
+  lc_set_exp_rec' H1 H2 H3 H4 H5 H6 H7 H8 H9 H10 H11 H12 H13 H14 .
 
 Hint Constructors lc_exp : core lngen.
 

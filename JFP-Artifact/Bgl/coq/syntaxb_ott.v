@@ -9,7 +9,8 @@ Definition b : Set := bool.
 Inductive typ : Set :=  (*r types *)
  | t_int : typ (*r int *)
  | t_arrow (A:typ) (B:typ) (*r function types *)
- | t_dyn : typ (*r dynamic type *).
+ | t_dyn : typ (*r dynamic type *)
+ | t_pro (A:typ) (B:typ).
 
 Inductive st : Set :=  (*r input type or projection label *)
  | st_ty (A:typ).
@@ -110,7 +111,9 @@ Inductive st : Set :=  (*r input type or projection label *)
   | Ground_lit : 
       Ground t_int
   | Ground_dyn : 
-      Ground  (t_arrow t_dyn t_dyn) .
+      Ground  (t_arrow t_dyn t_dyn)
+  | Ground_pro : 
+  Ground  (t_pro t_dyn t_dyn) .
  
  (* defns Values *)
  Inductive valueb : term -> Prop :=    (* defn valueb *)
@@ -142,7 +145,11 @@ Inductive st : Set :=  (*r input type or projection label *)
   | S_dynl : forall (A:typ),
       sim t_dyn A
   | S_dynr : forall (A:typ),
-      sim A t_dyn.
+      sim A t_dyn
+  | S_pro : forall (A B C D:typ),
+      sim A C ->
+      sim B D ->
+      sim (t_pro A B) (t_pro C D).
 
       (* defns Btyping *)
 Inductive Btyping : ctx -> term -> typ -> Prop :=    (* defn Btyping *)
@@ -198,6 +205,8 @@ Inductive resb : Type :=
   | t_blame :  var -> bool -> resb.
  
 
+Definition UG A B := sim A B /\ Ground B /\ not(A = B) /\ not(A = t_dyn).
+
 (* defns Semantics *)
 Inductive bstep : term -> resb -> Prop :=    (* defn step *)
   | Step_evalb E e1 e2 :
@@ -223,17 +232,11 @@ Inductive bstep : term -> resb -> Prop :=    (* defn step *)
      bstep  ( (trm_cast v p b t_dyn t_dyn) )  (t_term v)
  | bStep_anyd : forall (v:term) (A:typ) (p:var) b B,
      valueb v ->
-      not (   A  =  t_dyn   )  ->
-      not (   A  =  B  )  ->
-     sim A B ->
-     Ground B ->
+     UG A B ->
      bstep  ( (trm_cast v p b A t_dyn) )   (t_term (trm_cast  ( (trm_cast v p b A B) ) p b B t_dyn) ) 
  | bStep_dyna : forall (v:term) (A:typ) (p:var) b B,
      valueb v ->
-      not (   A  =  t_dyn   )  ->
-      not (   A  =  B   )  ->
-     sim A B ->
-      Ground B ->
+     UG A B ->
      bstep  ( (trm_cast v p b t_dyn A) )   (t_term  (trm_cast (trm_cast v p b t_dyn B) p b B A) ) 
  | bStep_vany : forall (v:term) (A:typ) (p:var) (q:var) b1 b2,
      Ground A ->

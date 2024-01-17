@@ -144,22 +144,22 @@ Proof.
     forwards* h6:IHR1_2 R2_2.
     inverts h5. inverts* h6.
     +
-    clear IHR2.
+    clear IHR2_1.  clear IHR2_2.
     inverts Typ as h1 h2.
     inverts h1 as h3 h4.
     inverts pval as pval1 pval2.
     (* forwards* h8: pattern_pro_uniq H H0. *)
     (* inverts h8. *)
-    forwards* h5:IHR1_1 R2.
+    forwards* h5:IHR1_1 R2_1.
     inverts* h5.
     +
-    clear IHR2.
+    clear IHR2_1.  clear IHR2_2.
     inverts Typ as h1 h2.
     inverts h1 as h3 h4.
     inverts pval as pval1 pval2.
     (* forwards* h8: pattern_pro_uniq H H0. *)
     (* inverts h8. *)
-    forwards* h5:IHR1_2 R2.
+    forwards* h5:IHR1_2 R2_2.
     inverts* h5.
   -
      inductions R2;eauto.
@@ -169,7 +169,7 @@ Proof.
      inverts pval as pval1 pval2.
      (* forwards* h8: pattern_pro_uniq H H0. *)
      (* inverts h8. *)
-     forwards* h5:IHR1 R2_1.
+     forwards* h5:IHR1_1 R2_1.
      inverts* h5.
   -
      inductions R2;eauto.
@@ -179,7 +179,7 @@ Proof.
      inverts pval as pval1 pval2.
      (* forwards* h8: pattern_pro_uniq H H0. *)
      (* inverts h8. *)
-     forwards* h5:IHR1 R2_2.
+     forwards* h5:IHR1_2 R2_2.
      inverts* h5.
 Qed.
 
@@ -271,6 +271,7 @@ Qed.
 
 
 
+
 Lemma sfill_eq: forall E0 e0 E e1 r1 r2,
   simpl_fill E0 e0 = simpl_fill E e1 ->
   step e0 r1 ->
@@ -281,12 +282,21 @@ Lemma sfill_eq: forall E0 e0 E e1 r1 r2,
 Proof.
   introv eq red1 red2 wf1 wf2. gen E e0 e1 r1 r2.
   inductions E0; unfold simpl_fill in *;  intros.
-  - inductions E; unfold simpl_fill in *; inverts* eq.
-    inverts wf1.
-    forwards*: step_not_abs red1.
-  - inductions E; unfold simpl_fill in *; inverts* eq.
-    inverts wf2.
-    forwards*: step_not_abs red2.
+  - inductions E; unfold simpl_fill in *; inverts* eq;
+    inverts wf1;
+    try solve[
+    forwards*: step_not_abs red2];
+    try solve[
+    forwards*: step_not_abs red1];
+    try solve[forwards*: step_not_value red1];
+    try solve[forwards*: step_not_value red2]
+    .
+  - inductions E; unfold simpl_fill in *; inverts* eq;
+    inverts wf2; try solve[
+    forwards*: step_not_abs red2];
+    try solve[forwards*: step_not_value red1];
+    try solve[forwards*: step_not_value red2]
+    .
   - inductions E; unfold simpl_fill in *; inverts* eq.
     inverts wf1.
     forwards*: step_not_value red1.
@@ -364,6 +374,12 @@ Proof.
   - (* i ---> i:int *)
     inverts* Red2. destruct E; unfold simpl_fill in H; inverts* H.
     destruct E; unfold simpl_fill in H; inverts* H.
+  - (* c ---> c:int *)
+    inverts* Red2. destruct E; unfold simpl_fill in H; inverts* H.
+    destruct E; unfold simpl_fill in H; inverts* H.
+  - (* c ---> c:int *)
+    inverts* Red2. destruct E; unfold simpl_fill in H; inverts* H.
+    destruct E; unfold simpl_fill in H; inverts* H.   
   - (* (p1:a, p2:b) *)
      inverts* Red2;
     try solve[destruct E; unfold simpl_fill in *; inverts* H1;
@@ -389,7 +405,9 @@ Proof.
     +
       destruct E; unfold simpl_fill in *; inverts H0;
       try solve[forwards*: step_not_value Red1];
-      try solve[inverts* H].
+      try solve[inverts* H];
+      try solve[inverts* H;
+      simpl in *; exfalso; apply H1; auto].
   - (* e1 e2 ---> blame e2 *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in H0; inverts* H0;
@@ -423,8 +441,7 @@ Proof.
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in *; inverts* H1; simpl in *;
     try solve[forwards*: step_not_value H3];
-    try solve[inverts* H2]]; simpl in *.
-    exfalso; apply H; auto.
+    try solve[inverts* H2;simpl in *; exfalso; apply H; auto]]; simpl in *; try solve[exfalso; apply H; auto].
   - (* v: a *)
     inverts* Red2;
     try solve[destruct E; unfold simpl_fill in *; inverts* H2;
@@ -497,6 +514,57 @@ Proof.
    exfalso; apply H4; simpl; eauto.
    +
    forwards* h1: pattern_pro_uniq H H5. inverts* h1.
+ -
+    inverts* Red2;simpl in *;
+   try solve[destruct E; unfold simpl_fill in *; inverts* H0;
+   forwards*: step_not_value H2];
+   try solve[inverts H];
+   try solve[exfalso; apply H4; eauto];
+   try solve[forwards*: step_not_value H3].
+   forwards* h1: pattern_abs_uniq H H4. inverts* h1.
+ -
+    inverts* Red2;simpl in *;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H0;
+    forwards*: step_not_value H2];
+    try solve[inverts H];
+    try solve[exfalso; apply H4; eauto];
+    try solve[forwards*: step_not_value H3];
+    try solve[exfalso; apply H5; eauto].
+    forwards* h1: pattern_abs_uniq H H5. inverts* h1.
+ -
+    inverts* Red2;simpl in *;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H1;
+    forwards*: step_not_value H3];
+    try solve[inverts H];
+    try solve[exfalso; apply H4; eauto];
+    try solve[forwards*: step_not_value H3];
+    try solve[exfalso; apply H; eauto].
+  -
+    inverts* Red2;simpl in *;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H1;
+    forwards*: step_not_value H3];
+    try solve[inverts H];
+    try solve[exfalso; apply H4; eauto];
+    try solve[forwards*: step_not_value H3];
+    try solve[exfalso; apply H; eauto].
+  -
+    inverts* Red2;simpl in *;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H0;
+    try solve[forwards*: step_not_value H2];
+    try solve[forwards*: step_not_abs H2]];
+    try solve[inverts H];
+    try solve[exfalso; apply H4; eauto];
+    try solve[forwards*: step_not_value H3];
+    try solve[exfalso; apply H; eauto].
+  -
+    inverts* Red2;simpl in *;
+    try solve[destruct E; unfold simpl_fill in *; inverts* H0;
+    try solve[forwards*: step_not_value H2];
+    try solve[forwards*: step_not_abs H2]];
+    try solve[inverts H];
+    try solve[exfalso; apply H4; eauto];
+    try solve[forwards*: step_not_value H3];
+    try solve[exfalso; apply H; eauto].
 Qed.
 
 

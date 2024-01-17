@@ -14,12 +14,26 @@ Fixpoint embed (e:nexp) (b: bool): exp :=
   match e with
   | ne_var_b i => e_var_b i
   | ne_var_f x => e_var_f x
-  | (ne_lit i5) => (e_anno (e_lit i5) t_dyn) 
+  | (ne_lit i5) => match b with
+                   | true =>
+                      (e_anno (e_lit i5) t_dyn) 
+                   | false => (e_lit i5)
+                    end
   | (ne_app e1 e2) => e_app (embed e1 true) (embed e2 false)
   | (ne_abs e) => match b with
                   | true => (e_anno (e_abs (embed(e) false)) t_dyn)
                   | false => (e_abs (embed(e) false))
                   end
+  | (ne_add) => match b with
+                   | true =>
+                      (e_anno (e_add) t_dyn) 
+                   | false => (e_add)
+                    end
+  | (ne_addl i5) => match b with
+                   | true =>
+                      (e_anno (e_addl i5) t_dyn) 
+                   | false => (e_addl i5)
+                    end
   end.
 
 
@@ -39,7 +53,13 @@ Inductive well_formed : ctx -> nexp -> Prop :=
  | wl_app : forall G e1 e2,
     well_formed G e1 ->
     well_formed G e2 ->
-    well_formed G (ne_app e1 e2).
+    well_formed G (ne_app e1 e2)
+    | wl_add : forall G,
+     uniq G ->
+     well_formed G (ne_add)
+     | wl_addl : forall G i,
+     uniq G ->
+     well_formed G (ne_addl i).
 
 
 Lemma embed_open_gen: forall e1 x n m b,
@@ -50,32 +70,38 @@ Proof.
   inductions n; intros; try solve[omega].
   inductions e1;intros; try solve[unfold embed in *; eauto].
   -
-  simpl; eauto.
-  destruct(lt_eq_lt_dec n0 m); eauto.
-  inverts* s.
+    simpl; eauto.
+    destruct(lt_eq_lt_dec n0 m); eauto.
+    inverts* s.
   -
-  destruct b.
-  +
-  assert(embed (ne_abs e1) true = (e_anno ((e_abs (embed e1 false)) ) t_dyn)).
-  unfold embed; eauto.
-  rewrite H.
-  simpl; eauto.
-  simpl in *.
-  forwards*: IHn e1 x (S m). omega.
-  rewrite H0; eauto.
-  +
-  assert(embed (ne_abs e1) false = (e_abs (embed e1 false))).
-  unfold embed; eauto.
-  rewrite H.
-  simpl; eauto.
-  simpl in *.
-  forwards*: IHn e1 x (S m). omega.
-  rewrite H0; eauto.
+    destruct b; simpl; eauto.
   -
-  simpl in *.
-  forwards*: IHn e1_1 x m. omega.
-  forwards*: IHn e1_2 x m. omega.
-  f_equal; eauto.
+    destruct b.
+    +
+    assert(embed (ne_abs e1) true = (e_anno ((e_abs (embed e1 false)) ) t_dyn)).
+    unfold embed; eauto.
+    rewrite H.
+    simpl; eauto.
+    simpl in *.
+    forwards*: IHn e1 x (S m). omega.
+    rewrite H0; eauto.
+    +
+    assert(embed (ne_abs e1) false = (e_abs (embed e1 false))).
+    unfold embed; eauto.
+    rewrite H.
+    simpl; eauto.
+    simpl in *.
+    forwards*: IHn e1 x (S m). omega.
+    rewrite H0; eauto.
+  -
+    simpl in *.
+    forwards*: IHn e1_1 x m. omega.
+    forwards*: IHn e1_2 x m. omega.
+    f_equal; eauto.
+  -
+    destruct b; simpl; eauto.
+  -
+    destruct b; simpl; eauto.
 Qed.
 
 

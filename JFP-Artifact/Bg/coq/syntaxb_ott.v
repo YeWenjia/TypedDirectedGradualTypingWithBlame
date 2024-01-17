@@ -6,11 +6,14 @@ Require Import List.
 (** syntax *)
 Definition i : Set := nat.
 Definition b : Set := bool.
+Definition l : Set := atom.
 
 Inductive typ : Set :=  (*r types *)
  | t_int : typ (*r int *)
  | t_arrow (A:typ) (B:typ) (*r function types *)
- | t_dyn : typ (*r dynamic type *).
+ | t_dyn : typ (*r dynamic type *)
+ | t_pro (A:typ) (B:typ).
+
 
 
 Inductive st : Set :=  (*r input type or projection label *)
@@ -107,7 +110,10 @@ Inductive st : Set :=  (*r input type or projection label *)
   | Ground_lit : 
       Ground t_int
   | Ground_dyn : 
-      Ground  (t_arrow t_dyn t_dyn) .
+      Ground  (t_arrow t_dyn t_dyn) 
+  | Ground_pro : 
+  Ground  (t_pro t_dyn t_dyn)
+.
  
  (* defns Values *)
  Inductive valueb : term -> Prop :=    (* defn valueb *)
@@ -139,7 +145,11 @@ Inductive st : Set :=  (*r input type or projection label *)
   | S_dynl : forall (A:typ),
       sim t_dyn A
   | S_dynr : forall (A:typ),
-      sim A t_dyn.
+      sim A t_dyn
+  | S_pro : forall (A B C D:typ),
+      sim A C ->
+      sim B D ->
+      sim (t_pro A B) (t_pro C D).
 
       (* defns Btyping *)
 Inductive Btyping : ctx -> term -> typ -> Prop :=    (* defn Btyping *)

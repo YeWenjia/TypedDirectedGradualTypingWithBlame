@@ -14,7 +14,7 @@ Require Export syntaxb_ott.
 
 (* *********************************************************************** *)
 (** * Induction principles for nonterminals *)
-
+(* 
 Scheme typ_ind' := Induction for typ Sort Prop.
 
 Definition typ_mutind :=
@@ -1554,4 +1554,4 @@ Hint Resolve subst_term_intro : lngen.
 (** * "Restore" tactics *)
 
 Ltac default_auto ::= auto; tauto.
-Ltac default_autorewrite ::= fail.
+Ltac default_autorewrite ::= fail. *)

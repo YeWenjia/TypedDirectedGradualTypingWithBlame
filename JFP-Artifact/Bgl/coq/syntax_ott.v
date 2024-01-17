@@ -6,7 +6,7 @@ Require Import syntaxb_ott.
 (** syntax *)
 
 
-(* Parameter label : atom. *)
+Parameter label : atom.
 
 Inductive exp : Set :=  (*r expressions *)
  | e_var_b (_:nat) (*r variables *)
@@ -17,7 +17,10 @@ Inductive exp : Set :=  (*r expressions *)
  | e_anno (e:exp) (p:var) (b:bool) (A:typ) (*r annotation *)
  | e_appv (e1:exp)  (e2:exp) (*r applications *)
  | e_add : exp (*r addition *)
- | e_addl (i5:i) (*r addl *).
+ | e_addl (i5:i) (*r addl *)
+ | e_pro (e1:exp) (e2:exp)
+ | e_l (e:exp) (p:var) (b:bool) 
+ | e_r (e:exp) (p:var) (b:bool) .
 
 Inductive dirflag : Set :=  (*r checking direction *)
  | Inf : dirflag
@@ -59,6 +62,9 @@ Fixpoint open_exp_wrt_exp_rec (k:nat) (e_5:exp) (e__6:exp) {struct e__6}: exp :=
   | (e_appv e1 e2) => e_appv (open_exp_wrt_exp_rec k e_5 e1) (open_exp_wrt_exp_rec k e_5 e2)
   | e_add => e_add 
   | (e_addl i5) => e_addl i5
+  | (e_pro e1 e2) => e_pro (open_exp_wrt_exp_rec k e_5 e1) (open_exp_wrt_exp_rec k e_5 e2)
+  | (e_l e p b) => e_l (open_exp_wrt_exp_rec k e_5 e) p b
+  | (e_r e p b) => e_r (open_exp_wrt_exp_rec k e_5 e) p b
 end.
 
 Definition open_exp_wrt_exp e_5 e__6 := open_exp_wrt_exp_rec 0 e__6 e_5.
@@ -89,7 +95,17 @@ Inductive lc_exp : exp -> Prop :=    (* defn lc_exp *)
  | lc_e_add : 
      (lc_exp e_add)
  | lc_e_addl : forall (i5:i),
-     (lc_exp (e_addl i5)).
+     (lc_exp (e_addl i5))
+ | lc_e_pro : forall (e1 e2:exp),
+     (lc_exp e1) ->
+     (lc_exp e2) ->
+     (lc_exp (e_pro e1 e2))
+ | lc_e_l : forall (e:exp) p b,
+     (lc_exp e) ->
+     (lc_exp (e_l e p b))
+ | lc_e_r : forall (e :exp) p b,
+     (lc_exp e) ->
+     (lc_exp (e_r e p b)).
 
 (** free variables *)
 Fixpoint fv_exp (e_5:exp) : vars :=
@@ -103,6 +119,9 @@ Fixpoint fv_exp (e_5:exp) : vars :=
   | (e_appv e1 e2) => (fv_exp e1) \u (fv_exp e2)
   | e_add => {}
   | (e_addl i5) => {}
+  | (e_pro e1 e2) => (fv_exp e1) \u (fv_exp e2)
+  | (e_l e p b) => (fv_exp e) 
+  | (e_r e p b) => (fv_exp e) 
 end.
 
 (** substitutions *)
@@ -117,17 +136,21 @@ Fixpoint subst_exp (e_5:exp) (x5:var) (e__6:exp) {struct e__6} : exp :=
   | (e_appv e1 e2) => e_appv (subst_exp e_5 x5 e1) (subst_exp e_5 x5 e2)
   | e_add => e_add 
   | (e_addl i5) => (e_addl i5)
+  | (e_pro e1 e2) => e_pro (subst_exp e_5 x5 e1) (subst_exp e_5 x5 e2)
+  | (e_l e l b) => e_l (subst_exp e_5 x5 e) l b
+  | (e_r e l b) => e_r (subst_exp e_5 x5 e) l b 
 end.
 
 
 (* principal types for values*)
-Fixpoint principal_type (v:exp) : typ :=
+Fixpoint dynamic_type (v:exp) : typ :=
   match v with
   | (e_lit i5) => t_int
   | (e_anno e p b A) => A
   | (e_abs t1 e l b t2) => (t_arrow t1 t2)
   | (e_add) => (t_arrow t_int (t_arrow t_int t_int))
   | (e_addl i5) => (t_arrow t_int t_int)
+  | (e_pro v1 v2) => (t_pro (dynamic_type v1) (dynamic_type v2))
   | _ => t_dyn
   end.
 
@@ -141,16 +164,21 @@ Inductive value : exp -> Prop :=    (* defn value *)
      value (e_abs t1 e l b t2)
  | value_fanno : forall (v:exp) (A B C D:typ) (p:var) b,
      value v ->
-      (t_arrow C D)  =   (principal_type   ( v )  )   ->
+      (t_arrow C D)  =   (dynamic_type   ( v )  )   ->
      value (e_anno v p b (t_arrow A B))
  | value_dyn : forall (v:exp) (p:var) b,
-     Ground   (principal_type  v )   ->
+     Ground   (dynamic_type  v )   ->
      value v ->
      value  ( (e_anno v p b t_dyn) )
  | value_add : 
      value e_add
  | value_addl : forall (i5:i),
-     value  ( (e_addl i5) ).
+     value  ( (e_addl i5) )
+ | value_pro : forall (v1 v2:exp),
+     value v1   ->
+     value v2 ->
+     value  ( (e_pro v1 v2) )
+.
 
 
 
@@ -164,7 +192,11 @@ Inductive pattern : typ -> typ -> Prop :=
    pattern t_dyn (t_arrow t_dyn t_dyn).
 
 
-
+Inductive pattern_pro : typ -> typ -> Prop :=    
+ | ppa_fun : forall A1 A2,
+    pattern_pro (t_pro A1 A2) (t_pro A1 A2)
+ | ppa_dyn : 
+    pattern_pro t_dyn (t_pro t_dyn t_dyn).
 
 (* defns Typing *)
 Inductive Typing : ctx -> exp -> dirflag -> typ -> Prop :=    (* defn Typing *)
@@ -199,7 +231,19 @@ Inductive Typing : ctx -> exp -> dirflag -> typ -> Prop :=    (* defn Typing *)
      Typing G e_add Inf (t_arrow t_int  (t_arrow t_int t_int) )
  | Typ_addl : forall (G:ctx) (i1:i),
      uniq  G  ->
-     Typing G (e_addl i1) Inf (t_arrow t_int t_int).
+     Typing G (e_addl i1) Inf (t_arrow t_int t_int)
+ | Typ_pro : forall (G:ctx) (e1 e2:exp) (A1 A2:typ),
+     Typing G e1 Inf A1 ->
+     Typing G e2 Inf A2 ->
+     Typing G (e_pro e1 e2) Inf (t_pro A1 A2)
+ | Typ_l : forall (G:ctx) (e:exp) (A A1 A2:typ) l b,
+     Typing G e Inf A ->
+     pattern_pro A (t_pro A1 A2) ->
+     Typing G (e_l e l b) Inf A1
+ | Typ_r : forall (G:ctx) (e:exp) (A A1 A2:typ) l b,
+     Typing G e Inf A ->
+     pattern_pro A (t_pro A1 A2) ->
+     Typing G  (e_r e l b)  Inf A2.
 
 Fixpoint cal_p (e:exp) (x:var) : var :=
       match e with
@@ -299,7 +343,11 @@ Inductive ctx_item : Type :=
      | appCtxR : exp -> var -> bool -> ctx_item
      | annoCtx : var -> bool -> typ -> ctx_item
      | appvCtxL : exp -> ctx_item
-     | appvCtxR : exp -> ctx_item.
+     | appvCtxR : exp -> ctx_item
+     | proCtxL : exp -> ctx_item
+     | proCtxR : exp -> ctx_item
+     | lCtx : var -> bool -> ctx_item
+     | rCtx : var -> bool -> ctx_item.
    
 Notation Evactx := (list ctx_item).
    
@@ -308,7 +356,7 @@ Inductive wellformed : ctx_item -> Prop :=
                    lc_exp e ->
                     wellformed (appCtxL e p b )
      | wf_appCtxR : forall (v : exp) p b A B,
-                    principal_type v = (t_arrow A B) ->
+                    dynamic_type v = (t_arrow A B) ->
                     value v ->
                     wellformed (appCtxR v p b)
      | wf_annoCtx : forall (A : typ)  (p:var) b,
@@ -318,7 +366,18 @@ Inductive wellformed : ctx_item -> Prop :=
                      wellformed (appvCtxL e )
       | wf_appvCtxR : forall (v : exp) ,
                      value v ->
-                     wellformed (appvCtxR v ).
+                     wellformed (appvCtxR v )
+       | wf_proCtxL : forall (e : exp),
+                     lc_exp e ->
+                      wellformed (proCtxL e)
+       | wf_proCtxR : forall (v : exp),
+                      value v ->
+                      wellformed (proCtxR v)
+       | wf_lCtx : forall l b,
+                      wellformed (lCtx l b)
+       | wf_rCtx : forall l b,
+                      wellformed (rCtx l b)
+.
    
 Definition fill (E : ctx_item) (e : exp) : exp :=
      match E with
@@ -327,6 +386,10 @@ Definition fill (E : ctx_item) (e : exp) : exp :=
      | annoCtx p b A => e_anno e p b A
      | appvCtxL e2   => e_appv e  e2
      | appvCtxR v1  => e_appv v1  e
+     | proCtxL e2 => e_pro e e2
+     | proCtxR v1 => e_pro v1 e
+     | lCtx l b => e_l e l b
+     | rCtx l b => e_r e l b
      end.
     
 Inductive res : Type :=
@@ -343,35 +406,55 @@ Inductive tpre : typ -> typ -> Prop :=    (* defn tpre *)
  | tp_abs : forall (A B C D:typ),
      tpre A C ->
      tpre B D ->
-     tpre (t_arrow A B) (t_arrow C D).
+     tpre (t_arrow A B) (t_arrow C D)
+ | tp_pro : forall (A B C D:typ),
+     tpre A C ->
+     tpre B D ->
+     tpre (t_pro A B) (t_pro C D).
+
+
+
 
 
 (* defns Semantics *)
 Inductive Cast : exp -> var -> bool -> typ -> res -> Prop :=    (* defn Cast *)
  | Cast_abs: forall v A B C D p b,
    sim (t_arrow C D) (t_arrow A B) ->
-   principal_type v = (t_arrow C D) ->
+   dynamic_type v = (t_arrow C D) ->
    Cast v p b (t_arrow A B) (e_exp (e_anno v p b (t_arrow A B)))
   | Cast_v : forall (v:exp)  (p:var) b,
-   Ground(principal_type v) ->
+   Ground(dynamic_type v) ->
    Cast v p b t_dyn (e_exp (e_anno v p b t_dyn))
  | Cast_lit : forall (i5:i) b (p:var),
      Cast (e_lit i5) p b t_int (e_exp (e_lit i5))
  | Cast_dd : forall (v:exp) (p:var) (q:var) b1 b2,
      lc_exp v ->
      Cast  ( (e_anno v q b1 t_dyn) ) p b2 t_dyn  (e_exp  (e_anno v q b1 t_dyn) ) 
- | Cast_anyd : forall (v:exp) (p:var) b,
-      FLike (principal_type  v )  ->
-     Cast v p b t_dyn  (e_exp (e_anno  ( (e_anno v p b (t_arrow t_dyn t_dyn)) ) p b t_dyn) ) 
- | Cast_dyna : forall (v:exp) (A:typ) (p:var) b1 b2 (q:var),
-      FLike A ->
-     sim (principal_type v) A ->
-    Cast  ( (e_anno v q b1 t_dyn) ) p b2 A  (e_exp (e_anno v p b2 A) ) 
+ | Cast_anyd : forall (v:exp) (p:var) b v' B,
+     UG (dynamic_type v) B ->
+      Cast v p b B (e_exp v') ->
+     Cast v p b t_dyn  (e_exp (e_anno  v' p b t_dyn) ) 
+ | Cast_dyna : forall (v:exp) (A:typ) (p:var) b1 b2 (q:var) r B,
+      UG A B ->
+    Cast v p b2 A r ->
+    Cast  ( (e_anno v q b1 t_dyn) ) p b2 A  r
  | Cast_vany : forall (v:exp) (p:var)  (q:var) b1 b2,
-   Cast (e_anno v q b1 t_dyn) p b2 (principal_type  v) (e_exp v)
+   Cast (e_anno v q b1 t_dyn) p b2 (dynamic_type  v) (e_exp v)
  | Cast_blame : forall (v:exp) (A:typ) (p:var) b1 b2 (q:var),
-      not (sim(principal_type  v ) A)  ->
-     Cast (e_anno v q b1 t_dyn) p b2 A (e_blame p b2).
+      not (sim(dynamic_type  v ) A)  ->
+     Cast (e_anno v q b1 t_dyn) p b2 A (e_blame p b2)
+ | Cast_pro : forall v1 v2 A B v1' v2' p b,
+     Cast v1 p b A (e_exp v1') ->
+     Cast v2 p b B (e_exp v2') ->
+     Cast (e_pro v1 v2) p b (t_pro A B) (e_exp (e_pro v1' v2'))
+ | Cast_prol : forall v1 v2 A B r p b ,
+     Cast v1 p b A (e_blame p b) ->
+     Cast v2 p b B r ->
+     Cast (e_pro v1 v2) p b (t_pro A B) (e_blame p b)
+ | Cast_pror : forall v1 v2 A B v1' p b, 
+     Cast v1 p b A (e_exp v1') ->
+     Cast v2 p b B (e_blame p b) ->
+     Cast (e_pro v1 v2) p b (t_pro A B) (e_blame p b).
 
   
 Inductive step : exp -> res -> Prop :=    (* defn step *)
@@ -390,7 +473,7 @@ Inductive step : exp -> res -> Prop :=    (* defn step *)
  | Step_betap : forall (A:typ) (e:exp) (B:typ) v1 v2  l1 b1,
     value v1 ->
     value v2 ->
-    principal_type (v1) = (t_arrow A B) ->
+    dynamic_type (v1) = (t_arrow A B) ->
     Cast v2 l1 b1 A (e_blame l1 b1) ->
     step (e_app v1 l1 b1 v2)  (e_blame l1 b1)
  | Step_annov : forall (v:exp) (A:typ) (v':res) (l:var) b,
@@ -402,12 +485,12 @@ Inductive step : exp -> res -> Prop :=    (* defn step *)
      value  ( (e_anno v1 l1 b1 (t_arrow A B)) )  ->
      value v1 ->
      value v2 ->     
-     principal_type v1 = (t_arrow C D) ->
+     dynamic_type v1 = (t_arrow C D) ->
      step (e_appv (e_anno v1 l1 b1 (t_arrow A B)) v2) (e_exp (e_anno (e_appv v1 (e_anno v2 l1 (negb b1) C)) l1 b1 B))
  | Step_app : forall (v1:exp) (A B:typ) (v2 v2':exp) l b,
      value v1  ->
      value v2 ->
-     principal_type (v1) = (t_arrow A B) ->
+     dynamic_type (v1) = (t_arrow A B) ->
      Cast v2 l b A (e_exp v2') ->
      step (e_app v1 l b v2) (e_exp (e_appv v1 v2'))
  | Step_dyn : forall (v1:exp) (v2:exp) l1 b1 l2 b2 ,
@@ -417,7 +500,22 @@ Inductive step : exp -> res -> Prop :=    (* defn step *)
  | Step_add : forall (i1:i),
      step (e_appv (e_add)  (e_lit i1))  (e_exp (e_addl i1 ))
  | Step_addl : forall (i1:i) (i2:i),
-     step (e_appv (e_addl i1)  (e_lit i2))  (e_exp (e_lit ( i1  +  i2 ))).
+     step (e_appv (e_addl i1)  (e_lit i2))  (e_exp (e_lit ( i1  +  i2 )))
+ | Step_ld : forall v l b l2 b2, 
+     value (e_anno v l b t_dyn) ->
+     step (e_l (e_anno v l b t_dyn) l2 b2) (e_exp (e_l (e_anno (e_anno v l b t_dyn) l2 b2 (t_pro t_dyn t_dyn)) l2 b2) )
+  | Step_rd : forall v l b l2 b2, 
+     value (e_anno v l b t_dyn) ->
+     step (e_r (e_anno v l b t_dyn) l2 b2) (e_exp (e_r (e_anno (e_anno v l b t_dyn) l2 b2 (t_pro t_dyn t_dyn)) l2 b2))
+  | Step_l : forall v1 v2 l b, 
+     value v1 ->
+     value v2 ->
+     step (e_l (e_pro v1 v2) l b) (e_exp v1)
+  | Step_r : forall v1 v2 l b, 
+     value v1 ->
+     value v2 ->
+     step (e_r (e_pro v1 v2) l b) (e_exp v2)
+ .
 
 
 Inductive sstep : exp -> res -> Prop :=    (* defn step *)
@@ -437,7 +535,7 @@ Inductive sstep : exp -> res -> Prop :=    (* defn step *)
  | sStep_betap : forall (A:typ) (e:exp) (B:typ) v1 v2  l1 b1,
     value v1 ->
     value v2 ->
-    principal_type (v1) = (t_arrow A B) ->
+    dynamic_type (v1) = (t_arrow A B) ->
     Cast v2 l1 b1 A (e_blame l1 b1) ->
     sstep (e_app v1 l1 b1 v2)  (e_blame l1 b1)
  | sStep_annov : forall (v:exp) (A:typ) (v':res) (l:var) b,
@@ -449,7 +547,7 @@ Inductive sstep : exp -> res -> Prop :=    (* defn step *)
      value  ( (e_anno v1 l1 b1 (t_arrow A B)) )  ->
      value v1 ->
      value v2 ->     
-     principal_type v1 = (t_arrow C D) ->
+     dynamic_type v1 = (t_arrow C D) ->
      Cast v2 l b A (e_exp v2') ->
      sstep (e_app (e_anno v1 l1 b1 (t_arrow A B)) l b v2) (e_exp (e_anno (e_app v1 l1 (negb b1) v2' ) l1 b1 B))
  | sStep_dyn : forall (v1:exp) (v2:exp) l1 b1 l2 b2 ,
@@ -463,7 +561,21 @@ Inductive sstep : exp -> res -> Prop :=    (* defn step *)
  | sStep_addl : forall (i1:i) (i2:i) l b v,
        value v ->
       Cast v l b t_int (e_exp (e_lit i2)) ->
-     sstep (e_app (e_addl i1) l b v)  (e_exp (e_lit ( i1  +  i2 ))).
+     sstep (e_app (e_addl i1) l b v)  (e_exp (e_lit ( i1  +  i2 )))
+ | sStep_ld : forall v l b l2 b2, 
+     value (e_anno v l b t_dyn) ->
+     sstep (e_l (e_anno v l b t_dyn) l2 b2) (e_exp (e_l (e_anno (e_anno v l b t_dyn) l2 b2 (t_pro t_dyn t_dyn)) l2 b2))
+  | sStep_rd : forall v l b l2 b2, 
+     value (e_anno v l b t_dyn) ->
+     sstep (e_r (e_anno v l b t_dyn) l2 b2) (e_exp (e_r (e_anno (e_anno v l b t_dyn) l2 b2 (t_pro t_dyn t_dyn)) l2 b2))
+  | sStep_l : forall v1 v2 l b, 
+     value v1 ->
+     value v2 ->
+     sstep (e_l (e_pro v1 v2) l b) (e_exp v1)
+  | sStep_r : forall v1 v2 l b, 
+     value v1 ->
+     value v2 ->
+     sstep (e_r (e_pro v1 v2) l b) (e_exp v2).
 
 
 Inductive precision : exp -> exp -> Prop :=    
@@ -471,24 +583,35 @@ Inductive precision : exp -> exp -> Prop :=
     precision (e_var_f x) (e_var_f x)
  |  epr_i i:
     precision (e_lit i) (e_lit i)  
- |  epr_abs : forall (e1 e2:exp) (L:vars) l1 b1 l2 b2 A1 B1 A2 B2,
+ |  epr_abs : forall (e1 e2:exp) (L:vars) l b A1 B1 A2 B2,
      ( forall x , x \notin  L  -> 
       precision ( open_exp_wrt_exp e1 (e_var_f x) )   ( open_exp_wrt_exp e2 (e_var_f x) )  )  ->
       tpre A1 A2 ->
       tpre B1 B2 ->
-      precision (e_abs A1 e1 l1 b1 B1) (e_abs A2 e2 l2 b2 B2)
- |  epr_app : forall (e1 e2 e1' e2':exp) l1 b1 l2 b2,
+      precision (e_abs A1 e1 l b B1) (e_abs A2 e2 l b B2)
+ |  epr_app : forall (e1 e2 e1' e2':exp) l b ,
      precision e1 e1' ->
      precision e2 e2' ->
-     precision (e_app e1 l1 b1 e2) (e_app e1' l2 b2 e2')
- |  epr_anno : forall (A B:typ) (e1 e2:exp) l1 b1 l2 b2,
+     precision (e_app e1 l b e2) (e_app e1' l b e2')
+ |  epr_anno : forall (A B:typ) (e1 e2:exp) l b,
      tpre A B ->
      precision e1 e2 ->
-     precision (e_anno e1 l1 b1 A) (e_anno e2 l2 b2 B)
+     precision (e_anno e1 l b A) (e_anno e2 l b B)
   | epr_add : 
      precision e_add e_add
   | epr_addl : forall i,
-     precision (e_addl i) (e_addl i).
+     precision (e_addl i) (e_addl i)
+  |  epr_pro : forall (e1 e2 e1' e2':exp),
+     precision e1 e1' ->
+     precision e2 e2' ->
+     precision (e_pro e1 e2) (e_pro e1' e2')
+     |  epr_l : forall (e1 e1':exp) l b,
+     precision e1 e1' ->
+     precision (e_l e1 l b) (e_l e1' l b)
+     |  epr_r : forall (e1 e1':exp) l b,
+     precision e1 e1' ->
+     precision (e_r e1 l b) (e_r e1' l b)
+.
 
 
 Inductive steps : exp -> res -> Prop :=
@@ -512,7 +635,7 @@ Inductive steps : exp -> res -> Prop :=
 
 
 
-Inductive epre : ctx -> ctx -> exp -> exp -> Prop :=    
+(* Inductive epre : ctx -> ctx -> exp -> exp -> Prop :=    
  | ep_var : forall (x:var) G1 G2,
     uniq G1 ->
     uniq G2 ->
@@ -559,7 +682,77 @@ Inductive epre : ctx -> ctx -> exp -> exp -> Prop :=
   | ep_addl : forall i G1 G2,
    uniq G1 ->
     uniq G2 ->
-     epre G1 G2 (e_addl i) (e_addl i).
+     epre G1 G2 (e_addl i) (e_addl i)
+  | ep_pro : forall (e1 e2 e1' e2':exp) G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 e2 e2' ->
+     epre G1 G2 (e_pro e1 e2) (e_pro e1' e2')
+  | ep_l : forall (e1 e1' :exp) G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 (e_l e1) (e_l e1')
+ | ep_r : forall (e1 e1' :exp) G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 (e_r e1) (e_r e1'). *)
+
+
+Inductive epre : ctx -> ctx -> exp -> exp -> Prop :=    
+ | ep_var : forall (x:var) G1 G2,
+    uniq G1 ->
+    uniq G2 ->
+    epre G1 G2 (e_var_f x) (e_var_f x)
+ | ep_i i:forall G1 G2,
+    uniq G1 ->
+    uniq G2 ->
+    epre G1 G2 (e_lit i) (e_lit i)  
+ | ep_abs : forall (e1 e2:exp) (L:vars) G1 G2 l b  A1 B1 A2 B2,
+    ( forall x , x \notin  L  -> 
+     epre (cons ( x , A1 )  G1 )  (cons ( x , A2 )  G2 ) (open_exp_wrt_exp e1 (e_var_f x))   (open_exp_wrt_exp e2 (e_var_f x)))  ->
+     tpre (t_arrow A1 B1) (t_arrow A2 B2) ->
+    epre G1 G2 ((e_abs A1 e1 l b B1)) ((e_abs A2 e2 l b B2))
+ | ep_app : forall (e1 e2 e1' e2':exp) l b  G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 e2 e2' ->
+     epre G1 G2 (e_app e1 l b e2) (e_app e1' l b e2')
+ | ep_anno : forall (A B:typ) (e1 e2:exp) l b G1 G2,
+     tpre A B ->
+     epre G1 G2 e1 e2 ->
+     epre G1 G2 (e_anno e1 l b A) (e_anno e2 l b B)
+ | ep_annor : forall (A:typ) (e1 e2:exp) B1 B2 l b G1 G2,
+   Typing G1 e1 Inf B1 ->
+   Typing G2 e2 Inf B2 ->
+   epre G1 G2 e1 e2 ->
+   tpre B1 A ->
+   tpre B1 B2 ->
+   epre G1 G2 e1 (e_anno e2 l b A)
+ | ep_annol : forall (A:typ) (e1 e2:exp) B1 B2 l b G1 G2,
+   Typing G1 e1 Inf B1 ->
+   Typing G2 e2 Inf B2 ->
+   epre G1 G2 e1 e2 ->
+   tpre A B2 ->
+   tpre B1 B2 ->
+   epre G1 G2 (e_anno e1 l b A) e2
+ | ep_appv : forall (e1 e2 e1' e2':exp) G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 e2 e2' ->
+     epre G1 G2 (e_appv e1 e2) (e_appv e1' e2')
+  | ep_add : forall G1 G2,
+      uniq G1 ->
+    uniq G2 ->
+     epre G1 G2 e_add e_add
+  | ep_addl : forall i G1 G2,
+   uniq G1 ->
+    uniq G2 ->
+     epre G1 G2 (e_addl i) (e_addl i)
+  | ep_pro : forall (e1 e2 e1' e2':exp) G1 G2,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 e2 e2' ->
+     epre G1 G2 (e_pro e1 e2) (e_pro e1' e2')
+  | ep_l : forall (e1 e1' :exp) G1 G2 l b,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 (e_l e1 l b) (e_l e1' l b)
+ | ep_r : forall (e1 e1' :exp) G1 G2 l b,
+     epre G1 G2 e1 e1' ->
+     epre G1 G2 (e_r e1 l b) (e_r e1' l b).
 
 
 Inductive epre_sz : ctx -> ctx -> exp -> exp -> nat -> Prop :=    
@@ -601,7 +794,18 @@ Inductive epre_sz : ctx -> ctx -> exp -> exp -> nat -> Prop :=
   | eps_add : forall G1 G2 ,
      epre_sz G1 G2 e_add e_add 1
   | eps_addl : forall i G1 G2,
-     epre_sz G1 G2 (e_addl i) (e_addl i) 1.
+     epre_sz G1 G2 (e_addl i) (e_addl i) 1
+  | eps_pro : forall (e1 e2 e1' e2':exp) G1 G2 n1 n2,
+     epre_sz G1 G2 e1 e1' n1 ->
+     epre_sz G1 G2 e2 e2' n2 ->
+     epre_sz G1 G2 (e_pro e1 e2) (e_pro e1' e2') (n1+n2+1)
+   | eps_l : forall (e1 e1' :exp) G1 G2 n1 l b,
+     epre_sz G1 G2 e1 e1' n1 ->
+     epre_sz G1 G2 (e_l e1 l b) (e_l e1' l b) (n1+1)
+    | eps_r : forall (e1 e1' :exp) G1 G2 n1 l b,
+     epre_sz G1 G2 e1 e1' n1 ->
+     epre_sz G1 G2 (e_r e1 l b) (e_r e1' l b) (n1+1)
+.
 
 
 
@@ -628,7 +832,12 @@ Inductive cpre : ctx -> ctx -> Prop :=
   | sub_g : forall A B,
       Ground B ->
       sub A B ->
-      sub A t_dyn.
+      sub A t_dyn
+  | sub_pro : forall (A B C D:typ),
+      sub A C ->
+      sub B D ->
+      sub (t_pro A B) (t_pro C D)
+.
 
 Inductive suba : typ -> typ -> Prop :=   
   | suba_i : 
@@ -639,6 +848,10 @@ Inductive suba : typ -> typ -> Prop :=
       suba (t_arrow A B) (t_arrow C D)
   | suba_dynr : forall (A:typ),
       suba A t_dyn
+  | suba_pro : forall (A B C D:typ),
+      suba A C ->
+      suba B D ->
+      suba (t_pro A B) (t_pro C D)
 with subb : typ -> typ -> Prop :=   
   | subb_i : 
       subb t_int t_int
@@ -651,7 +864,11 @@ with subb : typ -> typ -> Prop :=
   | subd_g : forall A B C,
       Ground B ->
       subb A B ->
-      subb A C.
+      subb A C
+  | subb_pro : forall (A B C D:typ),
+      subb A C ->
+      subb B D ->
+      subb (t_pro A B) (t_pro C D).
 
 
  Inductive ssub : typ -> typ -> Prop :=   
@@ -666,7 +883,11 @@ with subb : typ -> typ -> Prop :=
   | ssub_id : 
       ssub t_int t_dyn
  | ssub_ad :
-      ssub (t_arrow t_dyn t_dyn) t_dyn.
+      ssub (t_arrow t_dyn t_dyn) t_dyn
+      | ssub_pro: forall (A B C D:typ),
+      ssub A C ->
+      ssub B D ->
+      ssub (t_pro A B) (t_pro C D).
 
 Inductive ssuba : typ -> typ -> Prop :=   
   | ssuba_i : 
@@ -677,6 +898,10 @@ Inductive ssuba : typ -> typ -> Prop :=
       ssuba (t_arrow A B) (t_arrow C D)
   | ssuba_dynr : forall (A:typ),
       ssuba A t_dyn
+      | ssuba_pro : forall (A B C D:typ),
+      ssuba A C ->
+      ssuba B D ->
+      ssuba (t_pro A B) (t_pro C D)
 with ssubb : typ -> typ -> Prop :=   
   | ssubb_i : 
       ssubb t_int t_int
@@ -689,7 +914,11 @@ with ssubb : typ -> typ -> Prop :=
   | ssubd_fg : forall C,
       ssubb (t_arrow t_dyn t_dyn) C
   | ssubd_ig : forall C,
-      ssubb t_int C.
+      ssubb t_int C
+      | ssubb_pro : forall (A B C D:typ),
+      ssubb A C ->
+      ssubb B D ->
+      ssubb (t_pro A B) (t_pro C D).
 
 
 Inductive Safe : ctx -> exp -> var -> bool -> Prop :=    
@@ -738,7 +967,27 @@ Inductive Safe : ctx -> exp -> var -> bool -> Prop :=
     Safe G e_add l b
  | Safe_addl : forall i l b G,
     uniq G ->
-    Safe G (e_addl i) l b.
+    Safe G (e_addl i) l b
+ | Safe_pro : forall (e1 e2:exp) l b G,
+     Safe G e1 l b  ->
+     Safe G e2 l b  ->
+     Safe G (e_pro e1 e2) l b
+ | Safe_l : forall (e1 :exp) l b G A1 A2 l2 b2,
+     Safe G e1 l b  ->
+     Typing G e1 Inf (t_pro A1 A2) ->
+     Safe G (e_l e1 l2 b2) l b
+ | Safe_r : forall (e1 :exp) l b G  A1 A2 l2 b2,
+     Safe G e1 l b  ->
+     Typing G e1 Inf (t_pro A1 A2) ->
+     Safe G (e_r e1 l2 b2) l b
+| Safe_ld : forall (e1 :exp) l b G l2 b2,
+     Safe G (e_anno e1 l2 b2 (t_pro t_dyn t_dyn)) l b  ->
+     Typing G e1 Inf t_dyn ->
+     Safe G (e_l e1 l2 b2) l b
+ | Safe_rd : forall (e1 :exp) l b G l2 b2,
+     Safe G (e_anno e1 l2 b2 (t_pro t_dyn t_dyn)) l b  ->
+     Typing G e1 Inf t_dyn ->
+     Safe G (e_r e1 l2 b2) l b .
 
 
 Inductive btyping : ctx -> term -> typ -> exp -> Prop :=    (* defn Btyping *)
@@ -903,6 +1152,6 @@ Definition diverge e := not ((exists v, steps e (e_exp v) /\ value v) \/ exists 
 
 
 (** infrastructure *)
-Hint Constructors sstep_sz stepss etyping ssub ssuba ssubb suba subb sub Safe pattern typing ttyping atyping sstep
+Hint Constructors  pattern_pro sstep_sz stepss etyping ssub ssuba ssubb suba subb sub Safe pattern typing ttyping atyping sstep
 precision epre epre_sz tpre cpre Ground value sim Cast step steps ssteps wellformed Typing typing lc_exp btyping: core.
 

@@ -18,14 +18,14 @@ Require Export syntaxn_ott.
 Scheme nexp_ind' := Induction for nexp Sort Prop.
 
 Definition nexp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  nexp_ind' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 =>
+  nexp_ind' H1 H2 H3 H4 H5 H6 H7 H8.
 
 Scheme nexp_rec' := Induction for nexp Sort Set.
 
 Definition nexp_mutrec :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  nexp_rec' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6  H7 H8 =>
+  nexp_rec' H1 H2 H3 H4 H5 H6 H7 H8.
 
 
 (* *********************************************************************** *)
@@ -38,6 +38,8 @@ Fixpoint close_nexp_wrt_nexp_rec (n1 : nat) (x1 : var) (e1 : nexp) {struct e1} :
     | ne_lit i => ne_lit i
     | ne_abs e2 => ne_abs (close_nexp_wrt_nexp_rec (S n1) x1 e2)
     | ne_app e2 e3 => ne_app (close_nexp_wrt_nexp_rec n1 x1 e2) (close_nexp_wrt_nexp_rec n1 x1 e3)
+    | ne_add => ne_add
+    | ne_addl i => ne_addl i
   end.
 
 Definition close_nexp_wrt_nexp x1 e1 := close_nexp_wrt_nexp_rec 0 x1 e1.
@@ -53,6 +55,8 @@ Fixpoint size_nexp (e1 : nexp) {struct e1} : nat :=
     | ne_lit i => 1
     | ne_abs e2 => 1 + (size_nexp e2)
     | ne_app e2 e3 => 1 + (size_nexp e2) + (size_nexp e3)
+    | ne_add => 1
+    | ne_addl i => 1
   end.
 
 
@@ -75,13 +79,18 @@ Inductive degree_nexp_wrt_nexp : nat -> nexp -> Prop :=
   | degree_wrt_nexp_ne_app : forall n1 e1 e2,
     degree_nexp_wrt_nexp n1 e1 ->
     degree_nexp_wrt_nexp n1 e2 ->
-    degree_nexp_wrt_nexp n1 (ne_app e1 e2).
+    degree_nexp_wrt_nexp n1 (ne_app e1 e2)
+    | degree_wrt_nexp_ne_add : forall n1,
+    degree_nexp_wrt_nexp n1 (ne_add )
+    | degree_wrt_nexp_ne_addl : forall n1 i,
+    degree_nexp_wrt_nexp n1 (ne_addl i)
+    .
 
 Scheme degree_nexp_wrt_nexp_ind' := Induction for degree_nexp_wrt_nexp Sort Prop.
 
 Definition degree_nexp_wrt_nexp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  degree_nexp_wrt_nexp_ind' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6  H7 H8 =>
+  degree_nexp_wrt_nexp_ind' H1 H2 H3 H4 H5 H6 H7 H8.
 
 Hint Constructors degree_nexp_wrt_nexp : core lngen.
 
@@ -100,25 +109,30 @@ Inductive lc_set_nexp : nexp -> Set :=
   | lc_set_ne_app : forall e1 e2,
     lc_set_nexp e1 ->
     lc_set_nexp e2 ->
-    lc_set_nexp (ne_app e1 e2).
+    lc_set_nexp (ne_app e1 e2)
+    | lc_set_ne_add : 
+    lc_set_nexp (ne_add)
+    | lc_set_ne_addl : forall i,
+    lc_set_nexp (ne_addl i)
+.
 
 Scheme lc_nexp_ind' := Induction for lc_nexp Sort Prop.
 
 Definition lc_nexp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  lc_nexp_ind' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6  H7 H8 =>
+  lc_nexp_ind' H1 H2 H3 H4 H5 H6 H7 H8.
 
 Scheme lc_set_nexp_ind' := Induction for lc_set_nexp Sort Prop.
 
 Definition lc_set_nexp_mutind :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  lc_set_nexp_ind' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 =>
+  lc_set_nexp_ind' H1 H2 H3 H4 H5 H6 H7 H8.
 
 Scheme lc_set_nexp_rec' := Induction for lc_set_nexp Sort Set.
 
 Definition lc_set_nexp_mutrec :=
-  fun H1 H2 H3 H4 H5 H6 =>
-  lc_set_nexp_rec' H1 H2 H3 H4 H5 H6.
+  fun H1 H2 H3 H4 H5 H6 H7 H8 =>
+  lc_set_nexp_rec' H1 H2 H3 H4 H5 H6 H7 H8.
 
 Hint Constructors lc_nexp : core lngen.
 

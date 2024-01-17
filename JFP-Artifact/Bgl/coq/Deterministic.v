@@ -21,8 +21,8 @@ Hint Resolve BA_AB : core.
 
 Lemma flike_not_ground: forall v,
  value v ->
- FLike (principal_type v) ->
- not(Ground (principal_type v)).
+ FLike (dynamic_type v) ->
+ not(Ground (dynamic_type v)).
 Proof.
   introv val fl.
   inductions val; simpl in *; try solve[inverts* fl;
@@ -34,6 +34,117 @@ Proof.
   unfold not; intros nt; inverts* nt.
 Qed.
 
+
+Lemma UG_not_ground: forall A B,
+ UG A B ->
+ not(Ground A).
+Proof.
+  introv gr.
+  inverts gr as h1 h2.
+  inverts h2 as h3 h4.
+  inverts h4 as h4 h5.
+  unfold not;intros nt.
+  inverts h3. 
+  - 
+    inverts* h1.
+  -
+    inverts* h1.
+    inverts nt.
+    apply h4; auto.
+  -
+    inverts* h1.
+    inverts nt.
+    apply h4; auto.
+Qed.
+
+
+
+Lemma UG_sim: forall A B C,
+  UG A B ->
+  Ground C ->
+  sim C B ->
+  sim C A .
+Proof.
+  introv h1 h2 h0.
+  inverts h1 as h11 h12.
+  inverts h12 as h12 h13.
+  inverts h13 as h13 h14.
+  inverts h12.
+  -
+    inverts h11.
+    exfalso; apply h13; auto.
+    exfalso; apply h14; auto.
+  -
+    inverts h11.
+    inverts h0.
+    inverts* h2.
+    inverts* h2.
+    exfalso; apply h14; auto.
+  -
+    
+    inverts h11.
+    inverts h0.
+    inverts* h2.
+    exfalso; apply h14; auto.
+    inverts h0.
+    inverts* h2.
+    inverts* h2.  
+Qed.
+
+
+
+Lemma UG_uniq: forall A B1 B2,
+ UG A B1 ->
+ UG A B2 ->
+ B1 = B2.
+Proof.
+  introv gr1 gr2.
+  inverts gr1 as h1 h2.
+  inverts h2 as h3 h4.
+  inverts h4 as h4 h5.
+  inverts gr2 as h21 h22.
+  inverts h22 as h23 h24.
+  inverts h24 as h24 h25.
+  destruct A; try solve[inverts* h1].
+  -
+    inverts* h1.
+    inverts* h3.
+  -
+    inverts* h1.
+    inverts* h3.
+    inverts* h21.
+    inverts* h23.
+    inverts* h23.
+    inverts* h3.
+  -
+    inverts* h1.
+    inverts* h3.
+    inverts* h21.
+    inverts* h23.
+    inverts* h23.
+    inverts* h3.
+Qed.
+
+
+Lemma Cast_sim_aux: forall v A r l b ,
+    value v -> Cast v l b A r -> sim (dynamic_type v) A.
+Proof with auto.
+  introv Val Red.
+  lets Red': Red.
+  inductions Red; simpl in *; eauto.
+  -
+    rewrite H0.
+    auto.
+  -
+    inverts Val as h3 h4.
+    forwards*: IHRed1 Red1.
+  -
+    inverts Val as h3 h4.
+    forwards* h5: IHRed1 Red1.
+  -
+    inverts Val as h3 h4.
+    forwards* h5: IHRed1 Red1.
+Qed.
 
 
 Lemma Cast_unique: forall v r1 r2 (A: typ) B p b,
@@ -47,49 +158,116 @@ Proof.
   - 
     inverts* R2; try solve[inverts* H0].
   - 
-    inverts* R2; try solve[inverts H];
-    try solve[forwards*: flike_not_ground H].
+    inverts* R2; try solve[inverts H].
+    forwards*: UG_not_ground H0.
   - 
-    inverts* R2; try solve[ inverts* H7];try solve[inverts* H0];
-    try solve[inverts* H3].
+    inverts* R2; try solve[ inverts* H7];
+    try solve[ inverts* H0].
     +
-    inverts Val. rewrite H6 in *; inverts H2.
+      inverts Val.
+      rewrite H6 in *.
+      inverts H2.
     +
-    exfalso.
-    apply H7.
-    eauto.
+      exfalso.
+      apply H7.
+      eauto.
   - 
     inverts* R2;
-    try solve[forwards*: flike_not_ground H];
+    try solve[forwards*: UG_not_ground H];
     try solve[inverts* H].
-  - inverts* R2;
-    try solve[inverts H2];
-    try solve[inverts* H1];
-    try solve[inverts* H].
-    +
-    inverts* Val.
-    forwards*: flike_not_ground H.
+    forwards* h1: UG_uniq H H0.
+    inverts* h1.
+    forwards*: IHR1.
+    congruence.
   - 
-    inverts* R2; try solve[inverts* H4];
+    inverts* R2;
+    try solve[inverts* H];
+    try solve[inverts* H1];
+    try solve[inverts* H2];
+    try solve[
+    inverts Val; try solve[forwards*: UG_not_ground H]; eauto].
+    +
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts* Val.
+    +
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
+    inverts* Val.
+    forwards*: Cast_sim_aux R1.
+  - inverts* R2; try solve[inverts* H4];
     try solve[inverts* H3];
-    try solve[inverts* H7];
-    try solve[inverts* H].
+    try solve[inverts* H1].
     +
     inverts* Val.
-    rewrite <- H5 in *. inverts H1.
+    rewrite <- H5 in H1. inverts H1.
     +
     inverts* Val.
-    forwards*: flike_not_ground H1.
+    rewrite <- H in *. inverts H3.
+    +
+    inverts* Val.
+    forwards*: UG_not_ground H6.
     +
     exfalso; apply H6;eauto.
   -
-    inverts* R2; simpl in *;try solve[inverts* H7];
+    inverts* R2; try solve[inverts* H3];
     try solve[inverts* H1];
     try solve[inverts* H0].
     +
     exfalso; apply H; eauto.
     +
+    inverts Val.
+    forwards*: Cast_sim_aux H8.
+    +
     exfalso; apply H;simpl; eauto.
+  -
+    inverts* R2; try solve[inverts* Val; inverts typ as h1; inverts* h1];
+    try solve[inverts* H1];
+    try solve[inverts* H0].
+    +
+    inverts typ as typ1.
+    inverts typ1 as typ1 typ2.
+    inverts Val.
+    forwards* h1: IHR1_1 H6.
+    forwards* h2: IHR1_2 H7.
+    congruence.
+    +
+    inverts typ as typ1.
+    inverts typ1 as typ1 typ2.
+    inverts Val.
+    forwards* h1: IHR1_1 H6.
+    forwards* h2: IHR1_2 H7.
+    congruence.
+    +
+    inverts typ as typ1.
+    inverts typ1 as typ1 typ2.
+    inverts Val.
+    forwards* h1: IHR1_1 H6.
+    forwards* h2: IHR1_2 H7.
+    congruence.
+  -
+    inverts* R2; try solve[inverts* Val; inverts typ as h1; inverts* h1];
+    try solve[inverts* H1];
+    try solve[inverts* H0].
+    +
+    inverts typ as typ1.
+    inverts typ1 as typ1 typ2.
+    inverts Val.
+    forwards* h1: IHR1_1 H6.
+    forwards* h2: IHR1_2 H7.
+    congruence.
+  -
+    inverts* R2; try solve[inverts* Val; inverts typ as h1; inverts* h1];
+    try solve[inverts* H1];
+    try solve[inverts* H0].
+    +
+    inverts typ as typ1.
+    inverts typ1 as typ1 typ2.
+    inverts Val.
+    forwards* h1: IHR1_1 H6.
+    forwards* h2: IHR1_2 H7.
+    congruence.
 Qed.
 
 
@@ -116,6 +294,18 @@ Proof.
   - inductions E1; unfold fill in *; inverts* eq.
     inverts wf1.
     forwards*: step_not_value red2.
+  -
+    inductions E1; unfold fill in *; inverts* eq.
+    inverts wf2.
+    forwards*: step_not_value red1.
+  -
+    inductions E1; unfold fill in *; inverts* eq.
+    inverts wf1.
+    forwards*: step_not_value red2.
+  -
+    inductions E1; unfold fill in *; inverts* eq.
+  -
+   inductions E1; unfold fill in *; inverts* eq.    
 Qed.
 
 
@@ -125,29 +315,10 @@ Lemma fill_typ: forall E e1 A,
  exists B, Typing nil e1 Chk B.
 Proof.
   introv wf Typ. gen e1 A. 
-  inductions E; intros.
-  - 
-    simpl in *.
-    inverts Typ. inverts H. 
-    inverts wf.
-    forwards*: Typing_chk H8.
-  - 
-    unfold fill in *.
-    inverts Typ.
-    inverts* H.
-  - 
-    unfold fill in *.
-    inverts Typ.
-    inverts* H. 
-  - 
-    simpl in *.
-    inverts Typ. inverts H. 
-    inverts wf.
-    forwards*: Typing_chk H4.
-  - 
-    unfold fill in *.
-    inverts Typ.
-    inverts* H.
+  inductions E; intros;
+  try solve[simpl in *;
+  inverts Typ; inverts H;
+  exists*].
 Qed.
 
 
@@ -281,6 +452,25 @@ Proof.
     try solve[destruct E; unfold fill in H; inverts* H;
     forwards*: step_not_value H1;eapply value_fanno;eauto;reflexivity;
     forwards*: step_not_value H1].
+  - (* l *)
+    inverts* Red2;
+    try solve[destruct E; unfold fill in *; inverts* H0; 
+    forwards*: step_not_value H2; eapply value_fanno; simpl; eauto].
+  -
+    (* r *)
+    inverts* Red2;
+    try solve[destruct E; unfold fill in *; inverts* H0; 
+    forwards*: step_not_value H2; eapply value_fanno; simpl; eauto].
+  -
+    (* prol *)
+    inverts* Red2;
+    try solve[destruct E; unfold fill in *; inverts* H1; 
+    forwards*: step_not_value H3; eapply value_fanno; simpl; eauto].
+  -
+    (* prol *)
+    inverts* Red2;
+    try solve[destruct E; unfold fill in *; inverts* H1; 
+    forwards*: step_not_value H3; eapply value_fanno; simpl; eauto].
 Qed.
 
 

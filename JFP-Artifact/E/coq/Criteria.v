@@ -14,19 +14,7 @@ Require Import List. Import ListNotations.
 Require Import Arith Omega.
 Require Import Strings.String.
 
-(* Lemma tpre_refl: forall A,
-  tpre A A.
-Proof.
-   inductions A; eauto.
-Qed. *)
 
-
-(* Lemma sim_refl: forall A,
- sim A A.
-Proof.
-  introv.
-  inductions A; eauto.
-Qed. *)
 
 Lemma epre_lc: forall e1 e2,
  epre e1 e2 ->
@@ -407,6 +395,16 @@ Proof.
     forwards*: IHep H8 H0.
     forwards*: epre_sim H3 H0 tp.
     forwards*: cpre_uniq cp.
+  -
+    inverts typ as h1 h2; simpl in *.
+    inverts h1.
+    forwards*: epre_sim (t_arrow t_int (t_arrow t_int t_int)) t (t_arrow t_int (t_arrow t_int t_int)) t2.
+    forwards*: cpre_uniq cp.
+  -
+    inverts typ as h1 h2; simpl in *.
+    inverts h1.
+    forwards*: epre_sim ((t_arrow t_int t_int)) t ((t_arrow t_int t_int)) t2.
+    forwards*: cpre_uniq cp.
 Qed.
 
 
@@ -588,6 +586,42 @@ Proof.
 Qed.
 
 
+Lemma add_tpre:forall A,
+ sim (dynamic_type e_add) A ->
+ tpre (dynamic_type e_add) A.
+Proof.
+  introv sm; simpl in *.
+  inverts sm as h1 h2; eauto.
+  -
+    inverts h1 as h1.
+    +
+    inverts h2 as h21 h22; eauto.
+    inverts h21; inverts* h22.
+    +
+    inverts h2 as h21 h22; eauto.
+    inverts h21; inverts* h22.
+Qed.
+
+Lemma addl_tpre:forall A i,
+ sim (dynamic_type (e_addl i)) A ->
+ tpre (dynamic_type (e_addl i)) A.
+Proof.
+  introv sm; simpl in *.
+  inverts sm as h1 h2; eauto.
+  -
+    inverts h1 as h1;
+    inverts* h2.
+Qed.
+
+
+Lemma lit_tpre:forall A i,
+ sim (dynamic_type (e_lit i)) A ->
+ tpre (dynamic_type (e_lit i)) A.
+Proof.
+  introv sm; simpl in *.
+  inverts sm as h1 h2; eauto.
+Qed.
+
 
 
 Lemma Cast_dgg: forall p1 p2 v1' A1 B1 A2 B2 t1 t2,
@@ -661,6 +695,24 @@ Proof.
     simpl.
     inverts* h2.
     exists. splits*.
+  -
+    inverts ep.
+    simpl in *.
+    forwards* h4: meet_sim mt1.
+    forwards* h3: add_tpre A2.
+    forwards* h2: meet_tpre mt1 mt2.
+    forwards* h5: epre_sim (t_arrow t_int (t_arrow t_int t_int)) A2 
+    (t_arrow t_int (t_arrow t_int t_int)) B2.
+    forwards* h6: add_tpre B2.
+  -
+    inverts ep.
+    simpl in *.
+    forwards* h4: meet_sim mt1.
+    forwards* h3: addl_tpre A2.
+    forwards* h2: meet_tpre mt1 mt2.
+    forwards* h5: epre_sim ((t_arrow t_int t_int)) A2 
+    ((t_arrow t_int t_int)) B2.
+    forwards* h6: addl_tpre B2.
 Qed.
 
 
@@ -695,20 +747,58 @@ Proof.
       unfold simpl_fill in *.
       apply ep_app; eauto.
       *
-      inverts typ1; try solve[inverts H1;
-      inverts H; inverts H4].
-      inverts typ2; try solve[ inverts ep1;
-      inverts H; inverts H8].
-      forwards* h1: Typing_chk H5.
-      forwards* h2: Typing_chk H7.
-      inverts h1 as h1.
-      inverts h2 as h2.
+      inverts typ1 as hh1 hh2.
+      --
+      inverts typ2 as hh4 hh5.
+      ++
+      inverts hh1 as hh1 hh3.
+      inverts hh4 as hh4 hh6.
       forwards* h3: IHep2 H2.
       lets(ee2& rred2& eep2): h3.
       exists. split. 
       rewrite sfill_appr.
-      apply Step_eval;eauto.
+      apply Step_eval.
       unfold simpl_fill in *.
+      inverts H1; try solve[inverts* ep1];
+      try solve[inverts ep1 as hh7 hh8;inverts* hh8].
+      apply rred2.
+      apply ep_app; eauto.
+      ++
+      inverts hh1 as hh1 hh3.
+      forwards* h3: IHep2 H2.
+      lets(ee2& rred2& eep2): h3.
+      exists. split. 
+      rewrite sfill_appr.
+      apply Step_eval.
+      unfold simpl_fill in *.
+      inverts H1; try solve[inverts* ep1];
+      try solve[inverts ep1 as hh7 hh8;inverts* hh8].
+      apply rred2.
+      apply ep_app; eauto.
+      --
+      inverts typ2 as hh4 hh5.
+      ++
+      inverts hh4 as hh4 hh6.
+      forwards* h3: IHep2 H2.
+      lets(ee2& rred2& eep2): h3.
+      exists. split. 
+      rewrite sfill_appr.
+      apply Step_eval.
+      unfold simpl_fill in *.
+      inverts H1; try solve[inverts* ep1];
+      try solve[inverts ep1 as hh7 hh8;inverts* hh8].
+      apply rred2.
+      apply ep_app; eauto.
+      ++
+      forwards* h3: IHep2 H2.
+      lets(ee2& rred2& eep2): h3.
+      exists. split. 
+      rewrite sfill_appr.
+      apply Step_eval.
+      unfold simpl_fill in *.
+      inverts H1; try solve[inverts* ep1];
+      try solve[inverts ep1 as hh7 hh8;inverts* hh8].
+      apply rred2.
       apply ep_app; eauto.
     + 
       forwards* h1: epre_lc ep1.
@@ -724,22 +814,60 @@ Proof.
       forwards*: h3 xx.
       forwards*: epre_open H0 ep2.
     + 
-     inverts ep1 as h1 h2 h3 h4.
-     inverts h2 as h5 h6.
-     inverts h6 as h7 h8.
-     inverts h8 as h8.
-     inverts h1 as h1.
-     inverts h5 as h51 h52.
-     inverts h7 as h71 h72.
-     forwards* h9: dmatch_tpre h3 H3.
-     lets(tt1&h10&h11):h9.
-     inverts h11; try solve[inverts h10].
-     exists. splits.
-     eapply Step_app; eauto.
-     eapply ep_anno; eauto.
-     eapply ep_anno; eauto.
-     eapply ep_anno; eauto.
-     eapply ep_app; eauto.
+      inverts ep1 as h1 h2 h3 h4.
+      inverts h2 as h5 h6.
+      inverts h6 as h7 h8.
+      inverts h8 as h8.
+      inverts h1 as h1.
+      inverts h5 as h51 h52.
+      inverts h7 as h71 h72.
+      forwards* h9: dmatch_tpre h3 H3.
+      lets(tt1&h10&h11):h9.
+      inverts h11; try solve[inverts h10].
+      exists. splits.
+      eapply Step_app; eauto.
+      eapply ep_anno; eauto.
+      eapply ep_anno; eauto.
+      eapply ep_anno; eauto.
+      eapply ep_app; eauto.
+    +
+      inverts ep1 as h1 h2; simpl in *.
+      inverts h2; simpl in *.
+      inverts ep2 as h3 h4 ; simpl in *.
+      inverts h4; simpl in *.
+      forwards* h9: dmatch_tpre H4 H0.
+      lets(tt1&h10&h11):h9.
+      inverts h11 as h11; try solve[inverts h10].
+      inverts typ1 as h13 h14.
+      inverts h13 as h13 h15 h16.
+      inverts h13 as h13; simpl in *.
+      inverts h16 as h16.
+      inverts h16 as h16.
+      exists. splits.
+      eapply  Step_add.
+      apply h10.
+      apply ep_val; simpl in *;auto.
+      inverts h10; eauto.
+      inverts H6; auto.
+    +
+      inverts ep1 as h1 h2; simpl in *.
+      inverts h2; simpl in *.
+      inverts ep2 as h3 h4 ; simpl in *.
+      inverts h4; simpl in *.
+      forwards* h9: dmatch_tpre H4 H0.
+      lets(tt1&h10&h11):h9.
+      inverts h11 as h11; try solve[inverts h10].
+      inverts typ1 as h13 h14.
+      inverts h13 as h13 h15 h16.
+      inverts h13 as h13; simpl in *.
+      inverts h16 as h16.
+      inverts h16 as h16.
+      exists. splits.
+      eapply  Step_addl.
+      apply h10.
+      apply ep_val; simpl in *;auto.
+      inverts h10; eauto.
+      inverts H6; auto.
   - (* anno *)
     inverts* red.
     +

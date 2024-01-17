@@ -16,24 +16,23 @@ Require Import
         ttyping.
 
 Require Import List. Import ListNotations.
-Require Import Arith Omega.
 Require Import Strings.String.
 
-(* Require Import Omega. *)
+(* Require Import lia. *)
 
 Parameter label : atom.
 
 Ltac size_ind_auto :=
   ( eapply_first_lt_hyp ;
     try reflexivity;
-    try omega ;
+    try lia ;
     try eauto ).
 
 
 (* aux both *)
 
 Lemma principle_if: forall v A t,
-    value v -> typing nil v Inf3 A t -> principal_type v = A.
+    value v -> typing nil v Inf3 A t -> dynamic_type v = A.
 Proof.
      introv H typ.
      inductions H; inverts* typ; eauto.
@@ -249,6 +248,47 @@ Qed.
 
 
 
+
+
+Lemma UG_sim_l: forall A B C,
+  UG A B ->
+  sim C A ->
+  sim C B.
+Proof.
+  introv h1 h2.
+  inverts h1 as h11 h12.
+  inverts h12 as h12 h13.
+  inverts h13 as h13 h14.
+  inverts h12.
+  -
+    inverts h11.
+    exfalso; apply h13; auto.
+    exfalso; apply h14; auto.
+  -
+    inverts h11.
+    inverts* h2.
+    inverts* h2.
+  -
+    inverts h11.
+    exfalso; apply h14; auto.
+    inverts* h2.  
+Qed.
+
+
+
+
+
+Lemma ground_eq: forall A B ,
+  Ground A ->
+  Ground B ->
+  sim A B ->
+  A = B.
+Proof.
+  introv g1 g2 sb.
+  inverts g1; inverts g2; inverts* sb.
+Qed.
+
+
 Lemma Casting_soundness: forall v t v' p b A,
   typing nil (e_anno v p b A) Inf3 A t->
   value v ->
@@ -256,20 +296,19 @@ Lemma Casting_soundness: forall v t v' p b A,
   exists t', t ->* (t_term t') /\ typing nil v' Inf3 A t'.
 Proof.
   introv  Typ val Red. gen t.
-  inductions Red; intros.
+  inductions Red; intros;
+  try solve[inverts Typ as typ;inverts* typ];
+  try solve[inverts Typ as typ;inverts typ as typ;inverts typ].
   - 
-    inverts Typ.
-    inverts H7. exists*.
-  - inverts Typ.
-    forwards*: value_lc val.
-  - inverts Typ.
-    inverts H5.
-    inverts H3.
+    inverts Typ as typ.
+    inverts typ as typ.
+    inverts typ as typ.
     exists. split.
     apply star_one.
     apply bStep_lit; eauto. 
     apply typ_lit; eauto.
-  - inverts Typ as typ.
+  - 
+    inverts Typ as typ.
     inverts typ as typ.  
     forwards* h1: value_valueb1 val.
     inverts typ. 
@@ -283,51 +322,48 @@ Proof.
     inverts typ as typ.
     forwards* h1: principle_if typ.
     rewrite h1 in *.
-    inverts H as h2 h3. 
-    inverts h3 as h4 h5.
-    destruct A; try solve[inverts* h5]. 
+    forwards* h3: UG_to_sim H.
+    assert(typing [] v (Chk3 p b) B (trm_cast t0 p b A B)) as h4; auto.
+    assert( typing [] (e_anno v p b B) Inf3 B (trm_cast t0 p b A B)) as h2; eauto.
     forwards* h6: value_valueb1 typ.
+    forwards* h7: IHRed h2.
+    lets(t'&h8&h9):h7.
     exists. split.
+    eapply star_trans.
     apply star_one.
     eapply bStep_anyd;eauto.
+    apply multi_red_cast.
+    apply h8.
     apply typ_anno; eauto.
-  - inverts Typ as typ. 
+  - 
+    inverts Typ as typ. 
     inverts val.
+    forwards* h1: Cast_sim_aux Red.
     inverts typ as typ.
     inverts typ as typ.
-    inverts H as h1 h2.
-    inverts h2 as h3 h4.
-    destruct A; try solve[inverts* h4]. 
-    inverts H6; simpl in *; try solve[inverts* H0; inverts* H4].
-    +
-    inverts H4.
     inverts typ as typ.
-    forwards* h5: value_valueb1 typ.
-    inverts typ as typ.
+    forwards* h5: principle_if typ.
+    rewrite h5 in *.
+    assert( typing [] (e_anno v p b2 A) Inf3 A (trm_cast t p b2 A0 A)) as h6; eauto.
+    forwards* h7: IHRed.
+    lets(t'&h8&h9):h7.
+    forwards* h10: value_valueb1 typ.
+    forwards* h11: UG_sim_l H h1.
+    forwards* h12:ug_ground_r H.
+    forwards* h13: ground_eq h11.
+    substs*.
     exists. split.
     eapply star_trans.
     apply star_one.
     apply bStep_dyna; auto.
+    apply H.
     rewrite fillb_cast.
-    apply star_one.
-    apply Step_evalb; simpl in *;auto.
-    apply typ_anno; eauto.
-    eapply typ_sim; auto.
-    pick fresh x and apply typ_abs; eauto.
-    +
-    inverts H4.
-    inverts typ as typ.
-    forwards* h5: value_valueb1 typ.
-    inverts typ as typ.
-    exists. split.
     eapply star_trans.
     apply star_one.
-    apply bStep_dyna; auto.
-    rewrite fillb_cast.
-    apply star_one.
     apply Step_evalb; simpl in *;auto.
-    apply typ_anno; eauto.
-    eapply typ_sim; auto.
+    simpl.
+    apply h8.
+    auto.
   -
     inverts val.
     inverts Typ as typ.
@@ -348,9 +384,11 @@ Lemma soundness_mul_one: forall e t e' A dir ,
   exists t', t ->* (t_term t') /\ typing nil e' dir A t' .
 Proof.
   introv Typ Red. gen A t dir.
-  inductions Red; intros.
+  inductions Red; intros;
+  try solve[inverts Typ as typ; inverts typ as typ;inverts typ].
   - (* fill do *)
-    destruct E; unfold fill in *.
+    destruct E; unfold fill in *;
+    try solve[inverts Typ as typ; inverts typ].
     + inverts Typ.
       *
       forwards*: IHRed H8. inverts H0. inverts H1.
@@ -652,15 +690,101 @@ Qed.
 
 
 Lemma ground_dyn: forall A B, 
- A <> t_dyn ->
- A <> B ->
- sim A B ->
- Ground B ->
- B = (t_arrow t_dyn t_dyn).
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) \/ B = (t_pro t_dyn t_dyn).
 Proof.
-  introv h1 h2 h3 h4.
-  inverts* h3; try solve[inverts* h4].
+  introv h1.
+  inverts h1 as h1 h2.
+  inverts h2 as h2 h3.
+  inverts h3 as h3 h4.
+  inverts* h2.
+  inverts* h1.
 Qed.
+
+Lemma UG_inf: forall A B,
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) /\ (exists t1 t2, A = (t_arrow t1 t2)) \/
+ B = (t_pro t_dyn t_dyn) /\ (exists t1 t2, A = (t_pro t1 t2)).
+Proof.
+ introv ug.
+ inverts ug as  h1 h2.
+ inverts h2 as h2 h3.
+ inverts h3 as h3 h4.
+ inverts h2;inverts* h1.
+Qed.
+
+
+Lemma UG_inf_arr: forall A B t v,
+ valueb t ->
+ btyping [] t A v ->
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) /\ (exists t1 t2, A = (t_arrow t1 t2)).
+Proof.
+ introv val typ ug.
+ inverts ug as  h1 h2.
+ inverts h2 as h2 h3.
+ inverts h3 as h3 h4.
+ inverts h2;inverts* h1.
+ inverts val; try solve[inverts typ].
+Qed.
+
+
+
+Lemma UG_inf_arr2: forall A B t v,
+ value v ->
+ typing [] v Inf3 A t ->
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) /\ (exists t1 t2, A = (t_arrow t1 t2)).
+Proof.
+ introv val typ ug.
+ inverts ug as  h1 h2.
+ inverts h2 as h2 h3.
+ inverts h3 as h3 h4.
+ inverts h2;inverts* h1.
+ inverts val; try solve[inverts typ].
+Qed.
+
+
+
+Lemma UG_inf_arr_r: forall A B t v,
+ valueb t ->
+ btyping [] t B v ->
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) /\ (exists t1 t2, A = (t_arrow t1 t2)).
+Proof.
+ introv val typ ug.
+ inverts ug as  h1 h2.
+ inverts h2 as h2 h3.
+ inverts h3 as h3 h4.
+ inverts h2;inverts* h1.
+ inverts val; try solve[inverts typ].
+Qed.
+
+
+Lemma UG_inf_arr_r2: forall A B t v,
+ value v ->
+ typing [] v Inf3 B t ->
+ UG A B ->
+ B = (t_arrow t_dyn t_dyn) /\ (exists t1 t2, A = (t_arrow t1 t2)).
+Proof.
+ introv val typ ug.
+ inverts ug as  h1 h2.
+ inverts h2 as h2 h3.
+ inverts h3 as h3 h4.
+ inverts h2;inverts* h1.
+ inverts val; try solve[inverts typ].
+Qed.
+
+
+Lemma not_sim_neq: forall A B,
+ not (sim A B) ->
+ not( A = B).
+Proof.
+ introv h1.
+ unfold not;intros nt.
+ inverts* nt.
+Qed.
+
 
 
 
@@ -688,54 +812,64 @@ Proof.
     exists.
     splits*.
   -
-    inverts* H3; try solve[inverts val; inverts* typ;inverts* H2].
-    inverts* H2. 
-    forwards* h2:btyping_typing typ.
-    forwards*: principle_inf h2.
+    forwards* h2: UG_inf_arr typ.
+    inverts h2 as h2 h3.
+    lets(t1&t2&h4):h2.
+    substs*.
+    forwards* h5:btyping_typing typ.
+    forwards* h6: principle_inf h5.
+    rewrite <- h6 in *.
     left.
     exists. splits. 
     apply bbstep_refl.
     eapply Cast_anyd.
-    rewrite H2.
-    unfold FLike.
-    splits*.
+    apply H0.
+    eauto.
     eapply btyp_cast; eauto.
-    omega.
-    omega.
+    eapply btyp_cast; eauto.
+    rewrite h6; auto.
+    lia.
+    lia.
   -
-    assert(B0 = t_arrow t_dyn t_dyn) as hh1.
-    inverts* H3. inverts val; inverts typ; inverts* H2. subst.
-    inverts* H2. 
-    inverts val;inverts* typ.
-    inverts H4.
-    inverts H2; try solve[inverts H14;inverts* H2].
+    inverts typ as typ; try solve[inverts H].
+    inverts val as h2 h3.
+    inverts H as h4 h5.
+    forwards* h8: ug_ground_r H0.
+    forwards* h6:sim_decidable A0 B0.
+    inverts h6 as h6.
     +
-    right. rewrite fillb_cast.
-    rewrite fillb_cast.
-    splits.
-    apply Step_blameb;eauto.
-    simpl.
-    eapply bStep_vanyp;eauto.
-    inverts* H14.
-    unfold not;intros nt;inverts* nt.
-    inverts* H14.
-    eapply Cast_blame.
-    unfold not;intros nt;inverts* nt.
+      forwards* h7: ground_eq h6.
+      subst*.
+      forwards* h9: UG_inf_arr_r typ.
+      inverts h9 as h9.
+      lets(t1&t2&h11):h9.
+      subst.
+      inverts h1 as h1' h1''.
+      forwards* h12:btyping_typing typ.
+      forwards* h13: principle_inf h12.
+      left.
+      exists. splits.
+      eapply sstar_one.
+      rewrite fillb_cast.
+      apply Step_evalb;eauto.
+      eapply Cast_dyna; simpl;eauto.
+      eapply btyp_cast; eauto.
+      lia. lia.
     +
-    inverts h1.
-    assert((principal_type e) = (t_arrow t_dyn t_dyn)) as hh2.
-    inverts* H14; try solve[inverts H2]. 
-    rewrite hh2 in *.
-    left.
-    exists. splits.
-    eapply sstar_one.
-    rewrite fillb_cast.
-    apply Step_evalb;eauto.
-    eapply Cast_dyna; simpl;eauto.
-    unfold FLike; splits*.
-    rewrite hh2; auto.
-    eapply btyp_cast; eauto.
-    omega. omega.
+      forwards* h9: not_sim_neq h6.
+      inverts h1 as h1 h1'.
+      forwards* h12:btyping_typing typ.
+      forwards* h13: principle_inf h12.
+      right. rewrite fillb_cast.
+      rewrite fillb_cast.
+      splits.
+      apply Step_blameb;eauto.
+      simpl.
+      eapply bStep_vanyp;eauto.
+      eapply Cast_blame.
+      rewrite h13.
+      unfold not;intros nt.
+      forwards*: UG_sim_l H0 nt.
   -
     inverts* typ. 
     forwards* h2:btyping_typing H8. 
@@ -757,7 +891,7 @@ Theorem completeness_gen_ns: forall e t t' A n,
   exists l b, (bstep t' (t_blame l b)) /\ steps e (e_blame l b).
 Proof.
   introv sz Typ Red. gen e t t' A.
-  induction n; intros; try omega.
+  induction n; intros; try lia.
   lets Red': Red.
   inductions Red; intros.
   - clear IHRed.
@@ -767,7 +901,7 @@ Proof.
     forwards* lc: Typing_regular_1 h1.
     inverts Typ; simpl in *.
     inverts h1; simpl in *.
-    forwards* h2: IHn Red H3. simpl in *; omega.
+    forwards* h2: IHn Red H3. simpl in *; lia.
     inverts H.
     inverts* h2.
     *
@@ -781,8 +915,8 @@ Proof.
     apply multi_rred_appv2.
     auto. apply rred1.
     eapply btyp_app; eauto.
-    omega.
-    omega.
+    lia.
+    lia.
     *
     lets(ll1&bb1&rred1&rred2):H.
     right. exists.
@@ -794,7 +928,7 @@ Proof.
     +
     inverts Typ. inverts H.
     forwards* h1: valueb_value2 H3.
-    forwards* h2: IHn Red H6. simpl in *; omega.
+    forwards* h2: IHn Red H6. simpl in *; lia.
     inverts h2.
     *
     lets(vv1&tt2&nn1&rred2&rred1&typ2&ssz): H.
@@ -806,8 +940,8 @@ Proof.
     apply multi_rred_appv.
     auto. apply rred1.
     eapply btyp_app; eauto.
-    omega.
-    omega.
+    lia.
+    lia.
     *
     lets(ll1&bb1&rred1&rred2):H.
     right. exists.
@@ -819,7 +953,7 @@ Proof.
      forwards* lc: btyping_regular_3 Typ.
      inverts Typ; simpl in *.
      inverts lc.
-     forwards* h1: IHn Red H8. simpl in *; omega.
+     forwards* h1: IHn Red H8. simpl in *; lia.
      inverts h1.
      lets(vv1&tt2&nn1&rred2&rred1&typ2&ssz): H0.
      left.
@@ -829,8 +963,8 @@ Proof.
      apply multi_rred_anno.
      apply rred1.
      eapply btyp_cast; eauto.
-     omega.
-     omega.
+     lia.
+     lia.
      lets(ll1&bb1&rred1&rred2):H0.
      right. exists.
      splits.
@@ -857,7 +991,7 @@ Proof.
     simpl; reflexivity.
     rewrite h2 in *.
     eapply btyping_c_subst_simpl;eauto.
-    omega. omega.
+    lia. lia.
   -
     inverts Typ.
     forwards* h1: valueb_value2 H7.
@@ -874,7 +1008,7 @@ Proof.
     apply Step_annov; eauto.
     unfold not;intros nt;inverts* nt.
     auto.
-    omega. omega.
+    lia. lia.
     ++
     lets(rred1&rred2):H0.
     forwards*: bstep_not_value rred1.
@@ -892,7 +1026,7 @@ Proof.
     eapply stars_one.
     eapply Step_abeta;eauto.
     eapply btyp_cast;eauto.
-    omega. omega.
+    lia. lia.
   -
     inverts Typ.
     forwards* h1: valueb_value2 H8.
@@ -909,8 +1043,8 @@ Proof.
     apply rred2.
     apply step_refl.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     +
     left.
     exists. splits.
@@ -918,15 +1052,15 @@ Proof.
     apply stars_one.
     apply Step_annov; eauto.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     ++
     lets(rred1&rred2):H0.
     forwards*: bstep_not_value rred1.
   -
-    inverts Typ.
-    forwards* h1: valueb_value2 H12.
-    forwards* hh1: Cast_completeness H12 Red'.
+    inverts Typ as typp1 typp2.
+    forwards* h1: valueb_value2 typp1.
+    forwards* hh1: Cast_completeness typp1 Red'.
     inverts hh1 as hh1.
     ++
     lets(nn1&tt2&vv1&rred2&rred1&typ1&ssz): hh1.
@@ -939,8 +1073,8 @@ Proof.
     apply rred2.
     apply step_refl.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     +
     left.
     exists. splits.
@@ -948,18 +1082,16 @@ Proof.
     apply stars_one.
     apply Step_annov; eauto.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     ++
-    forwards* hh2: ground_dyn H1.
-    subst.
-    inverts* H2.
     lets(rred1&rred2):hh1.
-    forwards*: bstep_not_value rred1.
+    forwards hh2: cast_dyn_not_fail rred2;auto.
+    inverts hh2 as hh2;inverts hh2.
   -
-    inverts Typ.
-    forwards* h1: valueb_value2 H12.
-    forwards* hh1: Cast_completeness H12 Red'.
+    inverts Typ as typp1 typp2.
+    forwards* h1: valueb_value2 typp1.
+    forwards* hh1: Cast_completeness typp1 Red'.
     inverts hh1 as hh1.
     ++
     lets(nn1&tt2&vv1&rred2&rred1&typ1&ssz): hh1.
@@ -972,8 +1104,8 @@ Proof.
     apply rred2.
     apply step_refl.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     +
     left.
     exists. splits.
@@ -981,19 +1113,18 @@ Proof.
     apply stars_one.
     apply Step_annov; eauto.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     ++
-    forwards* hh2: ground_dyn H1.
-    subst.
-    inverts* H2.
+    inverts typp1; try solve[inverts H].
     lets(rred1&rred2):hh1.
     right. exists.
     splits*.
-    inverts h1;inverts H12.
     eapply step_b;eauto.
     eapply Step_annov;eauto.
-    unfold not;intros nt;inverts* nt. inverts H15.
+    unfold not;intros nt;inverts nt as nt1 nt2; 
+    try solve[inverts nt2];
+    try solve[inverts nt1]. 
   -
     inverts Typ.
     forwards* h1: valueb_value2 H9.
@@ -1010,8 +1141,8 @@ Proof.
     apply rred2.
     apply step_refl.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     +
     left.
     exists. splits.
@@ -1019,8 +1150,8 @@ Proof.
     apply stars_one.
     apply Step_annov; eauto.
     auto.
-    omega.
-    omega.
+    lia.
+    lia.
     ++
     lets(rred1&rred2):H2.
     forwards*: bstep_not_value rred1.
@@ -1030,14 +1161,14 @@ Proof.
     eapply bbstep_refl.
     eapply stars_one;eauto.
     eapply btyp_addl;eauto.
-    omega. omega.
+    lia. lia.
   -
     inverts Typ. inverts H2. inverts* H5.
     left. exists. splits.
     eapply bbstep_refl.
     eapply stars_one;eauto.
     eapply btyp_lit;eauto.
-    omega. omega.
+    lia. lia.
 Qed.
 
 
@@ -1052,7 +1183,7 @@ Theorem completeness_gen_n: forall e t t' A n n1,
   exists e', (steps e (e_exp e')) /\ btyping nil t' A e' /\ value e'.
 Proof.
   introv dd sz typ red val. gen t t' A e n.
-  inductions n1; intros; try solve[omega].
+  inductions n1; intros; try solve[lia].
   inverts* red.
   -
   forwards*: valueb_value2 typ.
@@ -1073,18 +1204,18 @@ Proof.
   assert(bbsteps ee2 (t_term t') (1+n)).
   eapply bbstep_n;eauto.
   forwards*: IHn1 H.
-  omega.
+  lia.
   inverts* H2. 
   ++
   assert(nn2 = 0).
-  omega.
+  lia.
   rewrite H in *.
   inverts* rred1.
   inverts* H8.
   forwards* h1: dd H3 H7.
   inverts* h1.
   forwards*: IHn1 H5.
-  omega.
+  lia.
   inverts* H2. 
   +
   inverts* H1.
@@ -1210,51 +1341,65 @@ Proof.
     forwards* h2: principle_if typ.
     inverts h1; inverts* h2.
   -
-    forwards* hh1: ground_dyn H2.
-    subst.
-    inverts* H2. 
+    forwards* hh1: UG_inf H0.
+    inverts hh1 as hh1.
+    +
+    inverts hh1 as hh1 hh2.
+    inverts hh1 as hh1.
+    inverts hh1 as hh1. 
     forwards* h2: principle_if typ.
     left.
     exists. splits*.
     eapply Cast_anyd.
     rewrite h2.
-    unfold FLike.
-    splits*.
+    apply H0.
+    eauto.
     eapply typ_anno; eauto.
-  -
-     forwards* hh1: ground_dyn H2.
-    subst.
-    inverts* H2.
-    inverts h1; inverts typ.
-    inverts H2.
     +
-      inverts H4; inverts* H6.
-      inverts H13 as h2. inverts h2.
+    inverts hh1 as hh1 hh2.
+    inverts hh1 as hh1.
+    inverts hh1 as hh1.
+    inverts h1;inverts* typ. 
+  -
+    inverts h1 as h1 h2; try solve[inverts typ].
+    inverts typ as typ.
+    inverts typ as typ.
+    forwards* h8: ug_ground_r H0.
+    inverts val as val1 val2.
+    forwards* h6:sim_decidable A0 B0.
+    inverts h6 as h6.
+    +
+      forwards* h7: ground_eq h6.
+      subst*.
+      forwards* h9: UG_inf_arr_r2 typ.
+      inverts h9 as h9.
+      lets(t1&t2&h11):h9.
+      subst.
+      forwards* h13: principle_if typ.
+      left.
+      exists. splits.
+      eapply sstar_one.
+      rewrite fillb_cast.
+      apply Step_evalb;eauto.
+      eapply Cast_dyna; simpl;eauto.
+      simpl.
+      eapply typ_anno; eauto.
+      lia. lia.
+    +
+      forwards* h9: not_sim_neq h6.
+      (* inverts h1 as h1 h1'. *)
+      (* forwards* h12:btyping_typing typ. *)
+      forwards* h13: principle_if typ.
       right. rewrite fillb_cast.
       rewrite fillb_cast.
       splits.
       apply Step_blameb;eauto.
       simpl.
       eapply bStep_vanyp;eauto.
-      unfold not;intros nt;inverts* nt.
-      eapply Cast_blame;simpl;eauto.
-      unfold not;intros nt;inverts* nt.
-    +
-      inverts H13 as h2.
-      forwards* h3: principle_if h2.
-      rewrite h3 in *. subst.
-      inverts val as val.
-      left.
-      exists. splits.
-      eapply sstar_one.
-      rewrite fillb_cast.
-      apply Step_evalb;eauto.
-      eapply  Cast_dyna; simpl;eauto.
-      unfold FLike; splits*.
-      rewrite h3. auto.
-      simpl in *.
-      eapply typ_anno; eauto.
-      lia. lia.
+      eapply Cast_blame.
+      rewrite h13.
+      unfold not;intros nt.
+      forwards*: UG_sim_l H0 nt.
   -
     inverts typ as typ.
     inverts typ as typ.
@@ -1287,7 +1432,7 @@ Theorem typing_completeness_gen: forall e t t' A n,
   exists l b, (bstep t' (t_blame l b)) /\ steps e (e_blame l b).
 Proof.
   introv sz Typ Red. gen e t t' A.
-  induction n; intros; try omega.
+  induction n; intros; try lia.
   lets Red': Red.
   inductions Red; intros; try solve[inverts Typ].
   -
@@ -1320,7 +1465,7 @@ Proof.
           apply multi_bblame_app2.
           auto. auto.
       *
-        forwards* h3: IHn Red h1. simpl in *; omega.
+        forwards* h3: IHn Red h1. simpl in *; lia.
         forwards* lc1:typing_regular_3 h2. 
         forwards* lc2:typing_regular_1 h2. 
         inverts h3 as h3.
@@ -1355,8 +1500,7 @@ Proof.
             destruct E; unfold fillb in *; inverts* H;
             forwards*: bstep_not_value H2
           ];
-          try solve[exfalso; apply H6; eauto].
-          forwards* hh1: ground_dyn H7. subst*. 
+          try solve[forwards h0: UG_not_ground H5; exfalso; apply h0; auto].
           inverts h1 as h1. inverts h1 as h1.
           forwards* h6: typing_Cast_completeness red.
           forwards* lc3: typing_regular_1 h2.
@@ -1377,7 +1521,7 @@ Proof.
             apply stars_one.
             apply Step_eval; eauto.
             apply Step_annov; eauto.
-            unfold not;intros nt;inverts* nt. inverts H7.
+            unfold not;intros nt;inverts nt as nt1 nt2. inverts nt2.
             unfold fill.
             eapply typ_app; eauto.
             lia. lia.
@@ -1395,7 +1539,7 @@ Proof.
             rewrite fill_appl.
             eapply Step_blame;eauto.
             eapply Step_annov;eauto.
-            unfold not;intros nt;inverts* nt. inverts H7.
+            unfold not;intros nt;inverts nt as nt1 nt2. inverts nt2.
         --
           assert(not (valueb t1)).
           unfold not;intros nt.
@@ -1706,8 +1850,10 @@ Proof.
       lia. lia.
     +
       lets(rred1&rred2):h1.
-      inverts* rred2.
-      exfalso; apply H0; auto.
+      forwards*: valueb_value_typ typ.
+      forwards* h2: cast_dyn_not_fail rred2.
+      inverts h2 as h2. 
+      inverts h2.
   -
     inverts Typ as h1.
     inverts h1 as h1.
@@ -1740,22 +1886,19 @@ Proof.
         auto.
         lia. lia.
     +
-      forwards* hh1: ground_dyn H2. subst.
       lets(h4&h5):h3.
-      inverts* h5.
-      exfalso; apply H4; auto.
+      forwards* h6: cast_dyn_not_fail h5.
+      inverts h6 as h6; inverts h6.
   -
-     forwards* hh1: ground_dyn H2. subst.
     inverts Typ as typ.
     inverts typ as typ.
-    inverts* H2.
     forwards* h1: typing_Cast_completeness Red'.
     inverts h1 as h1.
     +
       lets(nn1&tt1&vv1&rred1&rred2&ttyp1&eq1): h1.
       forwards* h2: typing_regular_1 typ.
       forwards* h3: valueb_value_typ typ.
-      forwards* h4: value_decidable (e_anno e0 p b (t_arrow A0 B)).
+      forwards* h4: value_decidable (e_anno e0 p b A).
       inverts h4 as h4.
       *
         forwards* h5: value_cast_keep2 rred2. inverts h5.
@@ -1778,23 +1921,15 @@ Proof.
       forwards* h2: valueb_value_typ typ.
       lets(rred1&rred2):h1.
       lets rred1': rred1.
-      inverts rred1.
-      destruct E; unfold fillb in *; inverts H2.
-      inverts* H9.
-      destruct E; unfold fillb in *; inverts H2;
-      try solve[forwards*: bstep_not_value H11].
-      inverts H11; try solve[exfalso; apply H13; auto].
-      inverts typ as typ. inverts typ as typ.
-      inverts h2.
-      inverts H10; inverts typ.
       right. 
       exists.
       splits.
       apply rred1'.
       apply step_b.
       apply Step_annov; eauto.
-      unfold not;intros nt;inverts nt as nt.
-      inverts H18.
+      unfold not;intros nt.
+      forwards* h5: value_cast_keep2 rred2. 
+      inverts h5.
   -
     inverts Typ as typ.
     inverts typ as typ.
@@ -1875,7 +2010,7 @@ Theorem typing_completeness_gens: forall e t t' A n n1,
   exists e', (steps e (e_exp e')) /\ typing nil e' Inf3 A t' /\ value e'.
 Proof.
   introv dd sz typ red val. gen t t' A e n.
-  inductions n1; intros; try solve[omega].
+  inductions n1; intros; try solve[lia].
   inverts* red.
   -
     forwards*: valueb_value_typ typ.
@@ -1896,11 +2031,11 @@ Proof.
           assert(bbsteps ee2 (t_term t') (1+n)).
           eapply bbstep_n;eauto.
           forwards*: IHn1 H.
-          omega.
+          lia.
           inverts* H2. 
         --
           assert(nn2 = 0).
-          omega.
+          lia.
           rewrite H in *.
           inverts* rred1.
           inverts* H7.
@@ -1970,34 +2105,44 @@ Proof.
     forwards* h00: btyping_typing typ. 
     forwards* h1: principle_inf h00.
     rewrite h1 in *.
-    inverts H as h2 h3. 
-    inverts h3 as h4 h5.
-    destruct A; try solve[inverts* h5]. 
     forwards* h6: value_valueb2 typ.
+    forwards* h7: IHRed (trm_cast t0 p b A B).
+    forwards* h8: UG_to_sim H.
+    lets(t'&h9&h10):h7.
     exists. split.
-    apply star_one;eauto.
+    eapply star_trans.
+    apply star_one.
+    eauto.
+    apply multi_red_cast.
+    apply h9.
     eapply btyp_cast; eauto.
-  - inverts Typ as typ h0. 
-    inverts val.
+  - 
+    inverts Typ as typ h0. 
+    inverts val as val1 val2.
     inverts typ as typ.
-    inverts H as h1 h2.
-    inverts h2 as h3 h4.
-    destruct A; try solve[inverts* h4]. 
     forwards* h5: value_valueb2 typ.
     forwards* h6: btyping_typing typ.
     forwards* h7: principle_inf h6.
+    forwards* h8: Cast_sim_aux Red.
     rewrite h7 in *.
-    inverts H0;try solve[inverts h0];
-    try solve[ rewrite <- TEMP in *;inverts H3].
-    rewrite <- TEMP in *;inverts H3.
+    forwards* h9: UG_sim_l H h8.
+    forwards* h10: ug_ground_r H.
+    forwards* hh: ground_eq h9.
+    rewrite hh in *.
+    forwards* h11: IHRed.
+    lets(t'&h12&h13): h11.
     exists. split.
     eapply star_trans.
     apply star_one.
     apply bStep_dyna; auto.
+    apply H.
+    eapply star_trans.
     rewrite fillb_cast.
     apply star_one.
     apply Step_evalb; simpl in *;auto.
-    apply btyp_cast; eauto.
+    simpl.
+    apply h12.
+    auto.
   -
     inverts val.
     inverts Typ as typ.
@@ -2006,6 +2151,8 @@ Proof.
     forwards* h4: btyping_typing typ.
     forwards* h2: principle_inf h4.
     rewrite h2 in *; eauto.
+  - inverts Typ as typ.
+  inverts typ as typ.
 Qed.
 
 

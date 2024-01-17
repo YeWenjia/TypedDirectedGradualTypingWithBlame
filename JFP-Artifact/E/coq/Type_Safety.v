@@ -142,6 +142,26 @@ Proof with auto.
     inverts h12.
     inverts H9; try solve[inverts H7].
     eapply Typ_val; simpl;eauto.
+  -
+    forwards* h3: meet_sim mt.
+    lets(h4&h5&h6):h3.
+    forwards* h7: meet_more_precise  mt.
+    eapply Typ_val; simpl;eauto.
+    inverts h7 as h7 h8.
+    inverts h7 as h7 h9.
+    inverts h7 as h7.
+    inverts h9 as h9 h10; eauto.
+    inverts*h9.
+    inverts* h10.
+  -
+    forwards* h3: meet_sim mt.
+    lets(h4&h5&h6):h3.
+    forwards* h7: meet_more_precise  mt.
+    eapply Typ_val; simpl;eauto.
+    inverts h7 as h7 h8.
+    inverts h7 as h7 h9.
+    inverts h7 as h7.
+    inverts h9 as h9 h10; eauto.
 Qed.
 
 
@@ -205,6 +225,28 @@ Proof.
       eapply Typ_absv with (L := 
       ( union L (union (fv_exp e2) (fv_exp e))));intros; eauto.
       eapply Typ_anno; eauto.
+    +
+      inverts Typ1 as h2 h3 h4 h5.
+      forwards* h1:pattern_abs_uniq H H1.
+      inverts h1 as h1; simpl in *.
+      inverts* H.
+      inverts* H1.
+      inverts* h5.
+      inverts h4 as h41 h42.
+      inverts h41 as h41.
+      inverts h42 as h42 h43.
+      eapply Typ_val; simpl in *;eauto.
+    +
+      inverts Typ1 as h2 h3 h4 h5.
+      forwards* h1:pattern_abs_uniq H H1.
+      inverts h1 as h1; simpl in *.
+      inverts* H.
+      inverts* H1.
+      inverts* h5.
+      inverts h4 as h41 h42.
+      inverts h41 as h41.
+      inverts h42 as h42 h43.
+      eapply Typ_val; simpl in *;eauto.
   - (* typing_anno *)
     inverts* J.
     +
@@ -308,6 +350,14 @@ Proof.
       pick fresh x. forwards*: H x.
       rewrite (subst_exp_intro x); eauto.
       eapply typing_c_subst_simpl; eauto.
+  -
+    inverts J as h1 h2 h3;eauto.
+    +
+      destruct E; unfold simpl_fill in *; inverts h3.
+  -
+    inverts J as h1 h2 h3;eauto.
+    +
+      destruct E; unfold simpl_fill in *; inverts h3.
 Qed.
 
 
@@ -402,17 +452,48 @@ Proof.
       inverts Val1 as val1.
       destruct(sim_decidable (dynamic_type p) (t_arrow t_dyn t_dyn)); eauto.
       inverts val1;inverts H0.
+      *
       inverts* Typ1.
+      *
+      inverts Val2 as h1 h2.
+      destruct(sim_decidable (dynamic_type p) t_int);
+      eauto;inverts h1;
+      try solve[simpl in *;inverts* H0;inverts* Typ1].
+      *
+      inverts Val2 as h1 h2.
+      destruct(sim_decidable (dynamic_type p) t_int);
+      eauto;inverts h1;
+      try solve[simpl in *;inverts* H0;inverts* Typ1].
     +
       inverts Val1 as val1.
       destruct(sim_decidable (dynamic_type p) (t_arrow t_dyn t_dyn)); eauto.
       inverts val1;inverts H0.
+      *
       inverts* Typ1.
+      *
+        left.
+        rewrite sfill_appr.
+        destruct e2'. 
+        --
+        exists.
+        apply Step_eval; eauto.
+        -- 
+        exists. apply Step_blame; eauto.
+      *
+        left.
+        rewrite sfill_appr.
+        destruct e2'. 
+        --
+        exists.
+        apply Step_eval; eauto.
+        -- 
+        exists. apply Step_blame; eauto.
     +
       inverts abs2 as h1.
       inverts Val1 as val1.
       destruct(sim_decidable (dynamic_type p) (t_arrow t_dyn t_dyn)); eauto.
-      inverts val1;inverts H0.
+      inverts val1;inverts H0;eauto.
+      *
       inverts* Typ1.
     +
       rewrite sfill_appl. 
@@ -523,107 +604,3 @@ Proof.
   inverts h1;inverts* Typ.
 Qed.
 
-
-
-(* Theorem progress : forall e dir T,
-    Typing nil e dir T ->
-    value e \/ (exists r, step e r).
-Proof.
-  introv Typ. lets Typ': Typ.
-  inductions Typ; 
-      lets Lc  : Typing_regular_1 Typ';
-      try solve [left*];
-      try solve [right*].
-  - (** "var" *)
-    inverts* H0.
-  - (* abs *)
-  - (* app *)
-    right. inverts Lc. 
-    lets* [Val1 | [e1' Red1]]: IHTyp1.
-    lets* [Val2 | [e2' Red2]]: IHTyp2.
-    +
-      inverts Val1 as val1.
-      destruct(sim_decidable (dynamic_type p) (t_arrow t_dyn t_dyn)); eauto.
-      inverts val1;inverts H0.
-      inverts* Typ1.
-    +
-      inverts Val1 as val1.
-      destruct(sim_decidable (dynamic_type p) (t_arrow t_dyn t_dyn)); eauto.
-      inverts val1;inverts H0.
-      inverts* Typ1.
-    +
-      rewrite sfill_appl. 
-      destruct e1'. 
-      * 
-      exists.
-      apply Step_eval; eauto.
-      * 
-      exists. apply Step_blame; eauto.
-  - (** anno *)
-    inverts* Lc.
-    destruct~ IHTyp as [ Val | [t' Red]].
-    + (* e_anno v A *)
-      inverts Val as val.
-      inverts Typ as typ.
-      inverts typ.
-      destruct(sim_decidable (dynamic_type p) A); eauto.
-      forwards* h1: meet_progress H.
-      lets(tt1& h2): h1.
-      inverts H6; try solve[inverts val].
-      forwards* h7: principle_inf H2.
-      forwards* h4: meet_more_precise h2.
-      lets(h5&h6):h4.
-      forwards* h8: tpre_sim h5.
-      apply sim_sym in h8.
-      rewrite h7 in h8.
-      forwards* h3: Cast_progress h2.
-      inverts* h3.
-    + 
-      rewrite sfill_anno. 
-      destruct t'; eauto. 
-  - (* chk *)
-    forwards*: IHTyp.
-  - (* pro *)
-    inverts Lc.
-    lets* [Val1 | [e1' Red1]]: IHTyp1.
-    lets* [Val2 | [e2' Red2]]: IHTyp2.
-    +
-    inverts Val1.
-    inverts* Val2.
-    +
-    rewrite sfill_pror. destruct e2'; eauto. 
-    +
-    rewrite sfill_prol. destruct e1'; eauto. 
-  - (* projl *)
-    inverts* Lc.
-    destruct~ IHTyp as [ Val | [t' Red]].
-    +
-    inverts Val.
-    inverts Typ.
-    destruct(sim_decidable (dynamic_type p) (t_pro t_dyn t_dyn)); eauto.
-    inverts H5; inverts* H2.
-    +
-    right.
-    rewrite sfill_l. destruct t'. exists.
-    apply Step_eval; eauto. exists. apply Step_blame; eauto.
-  - (* projr *)
-    inverts* Lc.
-    destruct~ IHTyp as [ Val | [t' Red]].
-    +
-    inverts Val.
-    inverts Typ.
-    destruct(sim_decidable (dynamic_type p) (t_pro t_dyn t_dyn)); eauto.
-    inverts H5; inverts* H2.
-    +
-    right.
-    rewrite sfill_r. destruct t'. exists.
-    apply Step_eval; eauto. exists. apply Step_blame; eauto.
-  -
-    inverts Lc as lc1 lc2.
-    forwards* h1: IHTyp.
-    inverts h1 as h2; eauto.
-    lets (ee&h3): h2.
-    rewrite sfill_appr. destruct ee; eauto. 
-Qed.
-     *)
-      

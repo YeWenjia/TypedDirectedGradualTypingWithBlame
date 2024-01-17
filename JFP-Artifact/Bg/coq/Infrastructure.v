@@ -1,13 +1,15 @@
 Require Import LibTactics.
 Require Import Metalib.Metatheory.
 Require Import syntax_ott
-               rules_inf.
+               rules_inf
+               syntaxl_ott.
 
 Require Import List. Import ListNotations.
 Require Import Strings.String.
 
 
 Definition irred e : Prop := forall b, ~(step e b).
+Definition eirred e : Prop := forall b, ~(sstep e b).
 
 Notation "Γ ⊢ E ⇒ A" := (Typing Γ E Inf A) (at level 45).
 Notation "Γ ⊢ E ⇐ A" := (Typing Γ E Chk A) (at level 45).
@@ -52,7 +54,9 @@ Ltac gather_atoms ::=
   let E := gather_atoms_with (fun x : ctx => dom x) in
   let F := gather_atoms_with (fun x : env => dom x) in
   let G := gather_atoms_with (fun x : term => fv_term x) in
-  constr:(A `union` B `union` C `union` D `union` F `union` G).
+  let H := gather_atoms_with (fun x : eexp => fv_eexp x) in
+  constr:(A `union` B `union` C `union` D `union` E `union` 
+   F `union` G `union` H).
 
 
 
@@ -79,3 +83,18 @@ Proof.
   try solve[inverts* H3;destruct E; unfold fill in H; inverts* H].
 Qed.
 
+
+
+Lemma sstep_not_evalue: forall (v:eexp),
+    evalue v -> eirred v.
+Proof.
+  introv.
+  unfold eirred.
+  inductions v; introv H;
+  inverts* H;
+  unfold not;intros;
+  try solve[inverts* H;destruct E; unfold fill in H0; inverts* H0];
+  try solve[inverts* H;destruct E; unfold fill in H0; inverts* H0;
+  inverts* H3;destruct E; unfold fill in H; inverts* H];
+  try solve[inverts* H3;destruct E; unfold fill in H; inverts* H].
+Qed.

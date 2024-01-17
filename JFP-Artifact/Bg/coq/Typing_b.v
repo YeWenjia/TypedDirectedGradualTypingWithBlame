@@ -8,7 +8,7 @@ Require Import syntaxb_ott
 Require Import List. Import ListNotations.
 Require Import Strings.String.
 
-
+(* 
 (* Common Lemmas *)
 Lemma Btyping_regular_1 : forall e G A,
     Btyping G e A -> lc_term e.
@@ -128,4 +128,4 @@ Proof.
     simpl_env. apply H1.
     apply H2.
 Qed.
-
+ *)
